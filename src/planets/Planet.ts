@@ -21,10 +21,10 @@ export class Planet {
   public fractureSystem: FractureSystem;
 
   private material: PlanetMaterial;
-  private surfaceTexture: THREE.CanvasTexture;
-  private specularTexture: THREE.CanvasTexture | null = null;
-  private nightTexture: THREE.CanvasTexture | null = null;
-  private ringTexture: THREE.CanvasTexture | null = null;
+  private surfaceTexture: THREE.Texture;
+  private specularTexture: THREE.Texture | null = null;
+  private nightTexture: THREE.Texture | null = null;
+  private ringTexture: THREE.Texture | null = null;
 
   public isDestroyed: boolean = false;
 
@@ -37,14 +37,32 @@ export class Planet {
     this.fractureSystem = new FractureSystem(config.radius, config.destruction.coreColor);
     this.group.add(this.fractureSystem.group);
 
-    // 2. Generate procedural textures based on configuration
-    this.surfaceTexture = ProceduralTextures.createSurfaceTexture(config.surface, 1024, 512);
+    const isEarth = config.id === 'earth';
 
-    if (config.surface.hasOcean) {
-      this.specularTexture = ProceduralTextures.createEarthSpecularTexture(512, 256);
-    }
-    if (config.surface.hasCityLights) {
-      this.nightTexture = ProceduralTextures.createEarthNightLightsTexture(512, 256);
+    // 2. Texture initialization: Real NASA Blue Marble for Earth, procedural for others
+    if (isEarth) {
+      const loader = new THREE.TextureLoader();
+      this.surfaceTexture = loader.load('./earth_day.jpg');
+      this.surfaceTexture.colorSpace = THREE.SRGBColorSpace;
+      this.surfaceTexture.wrapS = THREE.RepeatWrapping;
+      this.surfaceTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+      this.specularTexture = loader.load('./earth_specular.jpg');
+      this.specularTexture.wrapS = THREE.RepeatWrapping;
+      this.specularTexture.wrapT = THREE.ClampToEdgeWrapping;
+
+      this.nightTexture = loader.load('./earth_lights.png');
+      this.nightTexture.wrapS = THREE.RepeatWrapping;
+      this.nightTexture.wrapT = THREE.ClampToEdgeWrapping;
+    } else {
+      this.surfaceTexture = ProceduralTextures.createSurfaceTexture(config.surface, 1024, 512);
+
+      if (config.surface.hasOcean) {
+        this.specularTexture = ProceduralTextures.createEarthSpecularTexture(512, 256);
+      }
+      if (config.surface.hasCityLights) {
+        this.nightTexture = ProceduralTextures.createEarthNightLightsTexture(512, 256);
+      }
     }
 
     // 3. Create Planet Surface Mesh
@@ -70,7 +88,7 @@ export class Planet {
 
     // 5. Create Cloud Layer if configured
     if (config.clouds?.enabled) {
-      this.clouds = new CloudLayer(config.radius, config.clouds);
+      this.clouds = new CloudLayer(config.radius, config.clouds, isEarth);
       this.group.add(this.clouds.mesh);
     }
 

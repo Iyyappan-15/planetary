@@ -6,20 +6,27 @@ import { disposeNode } from '../utils/disposal';
 export class CloudLayer {
   public mesh: THREE.Mesh;
   private rotationSpeed: number;
-  private texture: THREE.CanvasTexture;
+  private texture: THREE.Texture;
 
-  constructor(radius: number, profile: CloudProfile) {
+  constructor(radius: number, profile: CloudProfile, isEarth: boolean = false) {
     this.rotationSpeed = profile.speed;
     const geometry = new THREE.SphereGeometry(radius * (1.0 + profile.altitude), 64, 64);
 
-    this.texture = ProceduralTextures.createCloudTexture(1024, 512, profile.seed);
+    if (isEarth) {
+      const loader = new THREE.TextureLoader();
+      this.texture = loader.load('./earth_clouds.png');
+      this.texture.wrapS = THREE.RepeatWrapping;
+      this.texture.wrapT = THREE.ClampToEdgeWrapping;
+    } else {
+      this.texture = ProceduralTextures.createCloudTexture(1024, 512, profile.seed);
+    }
 
     const material = new THREE.MeshStandardMaterial({
       map: this.texture,
       transparent: true,
-      opacity: profile.opacity,
+      opacity: isEarth ? 0.65 : profile.opacity * 0.75,
       blending: THREE.NormalBlending,
-      roughness: 1.0,
+      roughness: 0.9,
       metalness: 0.0,
       depthWrite: false,
     });

@@ -8,17 +8,20 @@ export class Atmosphere {
   private disturbance: number = 0;
 
   constructor(radius: number, profile: AtmosphereProfile, sunDirection: THREE.Vector3) {
-    const geometry = new THREE.SphereGeometry(radius * 1.045, 64, 64);
+    // Slightly larger sphere that creates a delicate glowing horizon halo
+    const geometry = new THREE.SphereGeometry(radius * 1.035, 64, 64);
 
     const vertexShader = `
+      varying vec3 vNormal;
       varying vec3 vWorldNormal;
       varying vec3 vWorldPosition;
 
       void main() {
+        vNormal = normalize(normalMatrix * normal);
         vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
         vec4 worldPos = modelMatrix * vec4(position, 1.0);
         vWorldPosition = worldPos.xyz;
-        gl_Position = projectionMatrix * viewMatrix * worldPos;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `;
 
@@ -29,6 +32,7 @@ export class Atmosphere {
       uniform float uDisturbance;
       uniform vec3 uSunDirection;
 
+      varying vec3 vNormal;
       varying vec3 vWorldNormal;
       varying vec3 vWorldPosition;
 
@@ -38,22 +42,22 @@ export class Atmosphere {
         
         // Rayleigh exponential rim falloff
         float rim = 1.0 - max(dot(normal, viewDir), 0.0);
-        rim = pow(rim, 4.0);
+        rim = pow(rim, 3.8);
 
-        // Daylight terminator lighting
+        // Sunlight factor: illuminated horizon
         float sunDot = dot(normal, normalize(uSunDirection));
-        float daylight = smoothstep(-0.25, 0.4, sunDot);
+        float daylight = smoothstep(-0.2, 0.4, sunDot);
 
         // Dynamic shockwave ripple
-        float ripple = sin(vWorldPosition.y * 14.0 + uDisturbance * 12.0) * uDisturbance * 0.15;
+        float ripple = sin(vWorldPosition.y * 12.0 + uDisturbance * 10.0) * uDisturbance * 0.12;
 
-        // Sky color shifts from deep twilight violet to brilliant cyan-blue
-        vec3 daylightColor = mix(uColor, vec3(0.5, 0.85, 1.0), 0.4);
-        vec3 twilightColor = mix(uColor * 0.5, vec3(0.7, 0.35, 0.2), 0.3);
+        // Clean, authentic sapphire-to-azure blue atmospheric scattering
+        vec3 daylightColor = mix(uColor, vec3(0.4, 0.78, 1.0), 0.5);
+        vec3 twilightColor = mix(uColor * 0.6, vec3(0.15, 0.35, 0.75), 0.5);
         vec3 finalColor = mix(twilightColor, daylightColor, daylight);
 
-        float alpha = (rim * uDensity + ripple) * (0.2 + 0.8 * daylight) * uGlowIntensity;
-        alpha = clamp(alpha, 0.0, 0.95);
+        float alpha = (rim * uDensity + ripple) * (0.05 + 0.95 * daylight) * uGlowIntensity;
+        alpha = clamp(alpha, 0.0, 0.9);
 
         gl_FragColor = vec4(finalColor, alpha);
       }
