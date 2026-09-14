@@ -16,8 +16,8 @@ import {
 } from 'lucide-react';
 
 interface WeaponToolbarProps {
-  activeWeaponId: WeaponId;
-  onSelectWeapon: (id: WeaponId) => void;
+  activeWeaponId: WeaponId | null;
+  onSelectWeapon: (id: WeaponId | null) => void;
 }
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -72,8 +72,8 @@ export const WeaponToolbar: React.FC<WeaponToolbarProps> = ({ activeWeaponId, on
             <div
               key={weapon.id}
               className={`weapon-card ${isActive ? 'active' : ''}`}
-              onClick={() => onSelectWeapon(weapon.id)}
-              title={weapon.description}
+              onClick={() => onSelectWeapon(isActive ? null : weapon.id)}
+              title={isActive ? `Click to deselect ${weapon.name}` : weapon.description}
             >
               <div className="weapon-info">
                 <Icon className="weapon-icon" />

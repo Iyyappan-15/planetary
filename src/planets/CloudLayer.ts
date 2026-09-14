@@ -24,7 +24,7 @@ export class CloudLayer {
     const material = new THREE.MeshStandardMaterial({
       map: this.texture,
       transparent: true,
-      opacity: isEarth ? 0.65 : profile.opacity * 0.75,
+      opacity: isEarth ? 0.35 : profile.opacity * 0.75,
       blending: THREE.NormalBlending,
       roughness: 0.9,
       metalness: 0.0,

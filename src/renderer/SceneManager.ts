@@ -22,15 +22,15 @@ export class SceneManager {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, settings.pixelRatio));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.35;
+    this.renderer.toneMappingExposure = 1.15;
 
     // Dramatic celestial sun illumination (shining from front-right)
-    this.sunLight = new THREE.DirectionalLight(0xfffdf5, 3.4);
+    this.sunLight = new THREE.DirectionalLight(0xfffdf5, 2.8);
     this.sunLight.position.set(12, 5, 14).normalize().multiplyScalar(25);
     this.scene.add(this.sunLight);
 
     // Deep space ambient fill (ensures unlit side is visible with realistic space contrast)
-    this.ambientLight = new THREE.AmbientLight(0x18243b, 0.65);
+    this.ambientLight = new THREE.AmbientLight(0x223355, 0.75);
     this.scene.add(this.ambientLight);
 
     this.createSpaceEnvironment();

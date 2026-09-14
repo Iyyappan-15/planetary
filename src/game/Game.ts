@@ -15,7 +15,7 @@ import { GravityWellWeapon } from '../weapons/gravity/GravityWell';
 export interface GameCallbacks {
   onIntegrityChange?: (integrity: PlanetIntegrity) => void;
   onTargetChange?: (target: TargetInfo | null) => void;
-  onActiveWeaponChange?: (weaponId: WeaponId) => void;
+  onActiveWeaponChange?: (weaponId: WeaponId | null) => void;
 }
 
 export class Game {
@@ -184,7 +184,7 @@ export class Game {
     this.audioManager.playReset();
   }
 
-  public setWeapon(id: WeaponId): void {
+  public setWeapon(id: WeaponId | null): void {
     const context = {
       scene: this.sceneManager.scene,
       planet: this.planet,
@@ -254,20 +254,19 @@ export class Game {
       this.audioManager.unlock();
 
       if (e.button === 0 && !e.shiftKey) {
-        // Left click = fire or start firing continuous weapon
-        const context = {
-          scene: this.sceneManager.scene,
-          planet: this.planet,
-          cameraController: this.cameraController,
-          particleSystem: this.particleSystem,
-          shockwaveSystem: this.shockwaveSystem,
-          audioManager: this.audioManager,
-        };
-
-        if (this.weaponManager.currentTarget) {
+        // If a weapon is selected and aiming at planet, fire it
+        if (this.weaponManager.activeWeaponId && this.weaponManager.currentTarget) {
+          const context = {
+            scene: this.sceneManager.scene,
+            planet: this.planet,
+            cameraController: this.cameraController,
+            particleSystem: this.particleSystem,
+            shockwaveSystem: this.shockwaveSystem,
+            audioManager: this.audioManager,
+          };
           this.weaponManager.startContinuous(context);
         } else {
-          // If clicked in empty space, allow rotating with left click as well!
+          // If no weapon is selected or clicked in empty space, left drag orbits/rotates camera freely!
           this.cameraController.startDrag(e.clientX, e.clientY);
         }
       } else {

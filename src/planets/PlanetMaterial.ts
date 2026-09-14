@@ -66,20 +66,21 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
         vec3 viewDir = normalize(cameraPosition - vWorldPosition);
 
         float NdotL = dot(normal, sunDir);
-        float dayFactor = smoothstep(-0.15, 0.25, NdotL);
+        float dayFactor = smoothstep(-0.2, 0.2, NdotL);
         float nightFactor = 1.0 - dayFactor;
 
-        // Diffuse lighting with realistic deep-space ambient fill
-        vec3 diffuse = scorchedColor * (0.16 + 0.84 * dayFactor);
+        // Diffuse lighting with crystal clear satellite visibility
+        vec3 diffuse = scorchedColor * (0.35 + 0.95 * dayFactor);
 
-        // Specular highlight on oceans (day side only)
+        // Specular ocean glint: tight, realistic sun reflection on water
         if (uHasOcean > 0.5) {
           float specMask = texture2D(tSpecular, vUv).r;
-          if (specMask > 0.3) {
+          if (specMask > 0.4) {
             vec3 halfVector = normalize(sunDir + viewDir);
             float NdotH = max(dot(normal, halfVector), 0.0);
-            float specular = pow(NdotH, 32.0) * specMask * dayFactor * 0.7;
-            diffuse += vec3(1.0, 0.95, 0.85) * specular;
+            // High power (128.0) gives sharp natural sun glint on ocean instead of huge milky fog
+            float specular = pow(NdotH, 128.0) * specMask * dayFactor * 0.45;
+            diffuse += vec3(1.0, 0.98, 0.92) * specular;
           }
         }
 

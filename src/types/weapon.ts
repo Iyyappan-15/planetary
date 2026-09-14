@@ -15,6 +15,8 @@ export type WeaponId =
   | 'planetary_glassmaker'
   | 'moonfall';
 
+export type ActiveWeaponId = WeaponId | null;
+
 export interface TargetInfo {
   point: THREE.Vector3;
   normal: THREE.Vector3;

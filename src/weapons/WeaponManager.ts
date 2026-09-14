@@ -16,7 +16,7 @@ import { disposeNode } from '../utils/disposal';
 
 export class WeaponManager {
   private weapons: Map<WeaponId, Weapon> = new Map();
-  public activeWeaponId: WeaponId = 'meteor';
+  public activeWeaponId: WeaponId | null = 'meteor';
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private mouseVec: THREE.Vector2 = new THREE.Vector2();
 
@@ -58,13 +58,16 @@ export class WeaponManager {
     this.weapons.set(weapon.config.id, weapon);
   }
 
-  public getActiveWeapon(): Weapon {
-    return this.weapons.get(this.activeWeaponId) || this.weapons.get('meteor')!;
+  public getActiveWeapon(): Weapon | null {
+    if (!this.activeWeaponId) return null;
+    return this.weapons.get(this.activeWeaponId) || null;
   }
 
-  public setActiveWeapon(id: WeaponId, context: WeaponContext): void {
+  public setActiveWeapon(id: WeaponId | null, context: WeaponContext): void {
     if (this.activeWeaponId !== id) {
-      this.getActiveWeapon().stopContinuous(context);
+      if (this.activeWeaponId) {
+        this.weapons.get(this.activeWeaponId)?.stopContinuous(context);
+      }
       this.activeWeaponId = id;
     }
   }
@@ -113,14 +116,18 @@ export class WeaponManager {
         distance: hit.distance,
       };
 
-      // Position reticle just above the surface aligned with surface normal
-      this.targetMarker.visible = true;
-      this.targetMarker.position.copy(point).addScaledVector(normal, 0.02);
-      this.targetMarker.lookAt(point.clone().add(normal));
+      // Position reticle just above the surface aligned with surface normal if a weapon is selected
+      if (this.activeWeaponId) {
+        this.targetMarker.visible = true;
+        this.targetMarker.position.copy(point).addScaledVector(normal, 0.02);
+        this.targetMarker.lookAt(point.clone().add(normal));
 
-      // Pulse reticle
-      const s = 1.0 + Math.sin(performance.now() * 0.008) * 0.15;
-      this.targetMarker.scale.set(s, s, s);
+        // Pulse reticle
+        const s = 1.0 + Math.sin(performance.now() * 0.008) * 0.15;
+        this.targetMarker.scale.set(s, s, s);
+      } else {
+        this.targetMarker.visible = false;
+      }
 
       return this.currentTarget;
     } else {
@@ -134,7 +141,7 @@ export class WeaponManager {
     if (!this.currentTarget || context.planet.isDestroyed) return false;
 
     const weapon = this.getActiveWeapon();
-    if (weapon.canFire()) {
+    if (weapon && weapon.canFire()) {
       weapon.execute(this.currentTarget, context);
       return true;
     }
@@ -150,14 +157,14 @@ export class WeaponManager {
 
   public stopContinuous(context: WeaponContext): void {
     this.isHoldingTrigger = false;
-    this.getActiveWeapon().stopContinuous(context);
+    this.getActiveWeapon()?.stopContinuous(context);
   }
 
   public update(delta: number, context: WeaponContext): void {
     const active = this.getActiveWeapon();
 
     // If holding down trigger on a weapon that requires hold or can rapid fire
-    if (this.isHoldingTrigger && this.currentTarget && !context.planet.isDestroyed) {
+    if (active && this.isHoldingTrigger && this.currentTarget && !context.planet.isDestroyed) {
       if (active.config.requiresHold) {
         active.execute(this.currentTarget, context);
       } else if (active.canFire()) {

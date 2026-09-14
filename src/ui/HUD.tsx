@@ -10,10 +10,10 @@ interface HUDProps {
   planet: PlanetConfig;
   integrity: PlanetIntegrity;
   targetInfo: TargetInfo | null;
-  activeWeaponId: WeaponId;
+  activeWeaponId: WeaponId | null;
   isRotationPaused: boolean;
   onToggleRotation: () => void;
-  onSelectWeapon: (id: WeaponId) => void;
+  onSelectWeapon: (id: WeaponId | null) => void;
   onOpenPlanetSelector: () => void;
   onOpenSatelliteMap: () => void;
   onOpenSettings: () => void;

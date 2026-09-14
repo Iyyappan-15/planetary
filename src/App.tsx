@@ -20,7 +20,7 @@ export const App: React.FC = () => {
   const [hasStarted, setHasStarted] = useState<boolean>(false);
   const [settings, setSettings] = useState<GameSettings>(loadStoredSettings());
   const [activePlanet, setActivePlanet] = useState<PlanetConfig>(PLANET_PRESETS[0]);
-  const [activeWeaponId, setActiveWeaponId] = useState<WeaponId>('meteor');
+  const [activeWeaponId, setActiveWeaponId] = useState<WeaponId | null>('meteor');
   const [isRotationPaused, setIsRotationPaused] = useState<boolean>(false);
   const [integrity, setIntegrity] = useState<PlanetIntegrity>({
     currentHp: 100,
@@ -62,7 +62,7 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleSelectWeapon = useCallback((id: WeaponId) => {
+  const handleSelectWeapon = useCallback((id: WeaponId | null) => {
     setActiveWeaponId(id);
     gameRef.current?.setWeapon(id);
   }, []);
@@ -130,7 +130,12 @@ export const App: React.FC = () => {
       } else if (e.key >= '1' && e.key <= '9') {
         const weaponIndex = parseInt(e.key, 10) - 1;
         if (weaponIndex < WEAPON_DEFINITIONS.length) {
-          handleSelectWeapon(WEAPON_DEFINITIONS[weaponIndex].id);
+          const pressedId = WEAPON_DEFINITIONS[weaponIndex].id;
+          setActiveWeaponId((curr) => {
+            const next = curr === pressedId ? null : pressedId;
+            gameRef.current?.setWeapon(next);
+            return next;
+          });
         }
       }
     };
