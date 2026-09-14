@@ -63,6 +63,10 @@ export class WeaponManager {
     return this.weapons.get(this.activeWeaponId) || null;
   }
 
+  public getWeapon(id: WeaponId): Weapon | null {
+    return this.weapons.get(id) || null;
+  }
+
   public setActiveWeapon(id: WeaponId | null, context: WeaponContext): void {
     if (this.activeWeaponId !== id) {
       if (this.activeWeaponId) {

@@ -184,9 +184,13 @@ export const App: React.FC = () => {
         <SatelliteMapModal
           planet={activePlanet}
           targetInfo={targetInfo}
+          activeWeaponId={activeWeaponId}
           onClose={() => setIsSatelliteMapOpen(false)}
           onJumpToCoordinates={(lat, lon) => {
             gameRef.current?.focusOnCoordinates(lat, lon);
+          }}
+          onFireAtCoordinates={(lat, lon, weaponId) => {
+            gameRef.current?.fireAtCoordinates(lat, lon, weaponId);
           }}
         />
       )}

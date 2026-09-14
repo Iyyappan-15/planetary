@@ -11,6 +11,7 @@ import { ParticleSystem } from '../effects/ParticleSystem';
 import { ShockwaveSystem } from '../effects/Shockwave';
 import { AudioManager } from '../audio/AudioManager';
 import { GravityWellWeapon } from '../weapons/gravity/GravityWell';
+import { latLonToVector3, vector3ToUV } from '../utils/math';
 
 export interface GameCallbacks {
   onIntegrityChange?: (integrity: PlanetIntegrity) => void;
@@ -205,6 +206,56 @@ export class Game {
 
   public focusOnCoordinates(lat: number, lon: number): void {
     this.cameraController.focusOnCoordinates(lat, lon);
+  }
+
+  public fireAtCoordinates(lat: number, lon: number, weaponId?: WeaponId | null): void {
+    if (this.planet.isDestroyed) return;
+
+    // Smoothly focus camera onto targeted coordinates
+    this.cameraController.focusOnCoordinates(lat, lon);
+
+    const chosenWeaponId = weaponId || this.weaponManager.activeWeaponId || 'meteor';
+    const weapon = this.weaponManager.getWeapon(chosenWeaponId);
+    if (!weapon) return;
+
+    // Ensure weapon is active
+    this.setWeapon(chosenWeaponId);
+
+    // Compute surface coordinates in planet space
+    const localPoint = latLonToVector3(lat, lon, this.planet.config.radius);
+    const localNormal = localPoint.clone().normalize();
+
+    // Transform to world space
+    const worldPoint = localPoint.clone();
+    this.planet.surfaceMesh.localToWorld(worldPoint);
+
+    const worldNormal = localNormal.clone();
+    worldNormal.transformDirection(this.planet.surfaceMesh.matrixWorld);
+
+    const uv = vector3ToUV(localPoint);
+
+    const target: TargetInfo = {
+      point: worldPoint,
+      normal: worldNormal,
+      uv,
+      lat,
+      lon,
+      distance: this.cameraController.camera.position.distanceTo(worldPoint),
+    };
+
+    const context = {
+      scene: this.sceneManager.scene,
+      planet: this.planet,
+      cameraController: this.cameraController,
+      particleSystem: this.particleSystem,
+      shockwaveSystem: this.shockwaveSystem,
+      audioManager: this.audioManager,
+    };
+
+    // Execute weapon strike with cinematic orbital trajectory
+    setTimeout(() => {
+      weapon.execute(target, context);
+    }, 120);
   }
 
   public resetPlanet(): void {

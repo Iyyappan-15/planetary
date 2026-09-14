@@ -14,8 +14,21 @@ interface ActiveFireball {
   maxDuration: number;
 }
 
+interface ActiveMissile {
+  group: THREE.Group;
+  startPos: THREE.Vector3;
+  targetPos: THREE.Vector3;
+  targetNormal: THREE.Vector3;
+  targetUV: { u: number; v: number };
+  targetLat: number;
+  targetLon: number;
+  progress: number;
+  speed: number;
+}
+
 export class NuclearBlastWeapon extends Weapon {
   private fireballs: ActiveFireball[] = [];
+  private missiles: ActiveMissile[] = [];
   private sphereGeo: THREE.SphereGeometry;
 
   constructor() {
@@ -38,7 +51,74 @@ export class NuclearBlastWeapon extends Weapon {
     if (!this.canFire()) return;
     this.lastFiredTime = performance.now();
 
-    const blastPos = target.point.clone().addScaledVector(target.normal, 0.08);
+    // 1. Build hypersonic missile model
+    const group = new THREE.Group();
+
+    // Body cylinder
+    const bodyGeo = new THREE.CylinderGeometry(0.06, 0.07, 0.45, 8);
+    bodyGeo.rotateX(Math.PI / 2);
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0x242830,
+      metalness: 0.85,
+      roughness: 0.3,
+    });
+    const body = new THREE.Mesh(bodyGeo, bodyMat);
+    group.add(body);
+
+    // Conical warhead tip
+    const tipGeo = new THREE.ConeGeometry(0.06, 0.22, 8);
+    tipGeo.rotateX(Math.PI / 2);
+    const tipMat = new THREE.MeshBasicMaterial({
+      color: 0xff6600,
+    });
+    const tip = new THREE.Mesh(tipGeo, tipMat);
+    tip.position.set(0, 0, 0.33);
+    group.add(tip);
+
+    // Fiery rocket exhaust plume
+    const plumeGeo = new THREE.ConeGeometry(0.05, 0.35, 8);
+    plumeGeo.rotateX(-Math.PI / 2);
+    const plumeMat = new THREE.MeshBasicMaterial({
+      color: 0xffcc33,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    });
+    const plume = new THREE.Mesh(plumeGeo, plumeMat);
+    plume.position.set(0, 0, -0.38);
+    group.add(plume);
+
+    // 2. Spawn in orbit ~9.5 units above the target normal
+    const startPos = target.point.clone().addScaledVector(target.normal, 9.5);
+    startPos.x += (Math.random() - 0.5) * 1.5;
+    startPos.y += (Math.random() - 0.5) * 1.5;
+
+    group.position.copy(startPos);
+    group.lookAt(target.point);
+    context.scene.add(group);
+
+    this.missiles.push({
+      group,
+      startPos,
+      targetPos: target.point.clone(),
+      targetNormal: target.normal.clone(),
+      targetUV: { ...target.uv },
+      targetLat: target.lat,
+      targetLon: target.lon,
+      progress: 0,
+      speed: 3.4, // Plunges from orbit in ~0.29s
+    });
+  }
+
+  private detonate(
+    targetPos: THREE.Vector3,
+    targetNormal: THREE.Vector3,
+    targetUV: { u: number; v: number },
+    targetLat: number,
+    targetLon: number,
+    context: WeaponContext
+  ): void {
+    const blastPos = targetPos.clone().addScaledVector(targetNormal, 0.08);
 
     // 1. Dynamic Flash PointLight
     const light = new THREE.PointLight(0xfff3cc, 18.0, 10.0, 1.5);
@@ -86,11 +166,11 @@ export class NuclearBlastWeapon extends Weapon {
 
     // 4. Register crater in damage system
     context.planet.registerImpact({
-      u: target.uv.u,
-      v: target.uv.v,
-      lat: target.lat,
-      lon: target.lon,
-      position: target.point,
+      u: targetUV.u,
+      v: targetUV.v,
+      lat: targetLat,
+      lon: targetLon,
+      position: targetPos,
       radius: this.config.damageRadius,
       intensity: this.config.damageIntensity,
       heat: 1.0,
@@ -99,16 +179,16 @@ export class NuclearBlastWeapon extends Weapon {
 
     // 5. Shockwave ring expanding across the atmosphere
     context.shockwaveSystem.create(
-      target.point,
-      target.normal,
+      targetPos,
+      targetNormal,
       context.planet.config.radius * 0.85,
       '#ffe099'
     );
 
     // 6. Plume of glowing embers and hot ejecta
     context.particleSystem.emit(
-      target.point,
-      target.normal,
+      targetPos,
+      targetNormal,
       140,
       '#ff9922',
       1.2,
@@ -123,6 +203,38 @@ export class NuclearBlastWeapon extends Weapon {
   }
 
   public update(delta: number, context: WeaponContext): void {
+    // 1. Update descending orbital missiles
+    for (let i = this.missiles.length - 1; i >= 0; i--) {
+      const m = this.missiles[i];
+      m.progress += m.speed * delta;
+
+      if (m.progress >= 1.0) {
+        // Missile impacts target
+        this.detonate(m.targetPos, m.targetNormal, m.targetUV, m.targetLat, m.targetLon, context);
+        context.scene.remove(m.group);
+        disposeNode(m.group);
+        this.missiles.splice(i, 1);
+        continue;
+      }
+
+      // Move missile toward surface
+      m.group.position.lerpVectors(m.startPos, m.targetPos, m.progress);
+      m.group.lookAt(m.targetPos);
+
+      // Rocket exhaust flame trail
+      context.particleSystem.emit(
+        m.group.position,
+        m.targetNormal.clone().negate(),
+        2,
+        '#ffaa22',
+        0.15,
+        0.7,
+        0.4,
+        0.5
+      );
+    }
+
+    // 2. Update expanding fireballs
     for (let i = this.fireballs.length - 1; i >= 0; i--) {
       const fb = this.fireballs[i];
       fb.duration += delta;
@@ -173,6 +285,12 @@ export class NuclearBlastWeapon extends Weapon {
       disposeNode(fb.outerMesh);
     }
     this.fireballs = [];
+
+    for (const m of this.missiles) {
+      disposeNode(m.group);
+    }
+    this.missiles = [];
+
     this.sphereGeo.dispose();
   }
 }

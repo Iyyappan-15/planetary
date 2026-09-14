@@ -24,6 +24,7 @@ export class Planet {
 
   private material: PlanetMaterial;
   private surfaceTexture: THREE.Texture;
+  private normalTexture: THREE.Texture | null = null;
   private specularTexture: THREE.Texture | null = null;
   private nightTexture: THREE.Texture | null = null;
   private ringTexture: THREE.Texture | null = null;
@@ -51,6 +52,10 @@ export class Planet {
       this.surfaceTexture.wrapS = THREE.RepeatWrapping;
       this.surfaceTexture.wrapT = THREE.ClampToEdgeWrapping;
 
+      this.normalTexture = loader.load('./earth_normal.jpg');
+      this.normalTexture.wrapS = THREE.RepeatWrapping;
+      this.normalTexture.wrapT = THREE.ClampToEdgeWrapping;
+
       this.specularTexture = loader.load('./earth_specular.jpg');
       this.specularTexture.wrapS = THREE.RepeatWrapping;
       this.specularTexture.wrapT = THREE.ClampToEdgeWrapping;
@@ -73,6 +78,7 @@ export class Planet {
     const sphereGeo = new THREE.SphereGeometry(config.radius, 64, 64);
     this.material = new PlanetMaterial({
       surfaceMap: this.surfaceTexture,
+      normalMap: this.normalTexture,
       specularMap: this.specularTexture,
       nightMap: this.nightTexture,
       damageMap: this.damageSystem.damageTexture,
@@ -208,6 +214,7 @@ export class Planet {
     if (this.ringMesh) disposeNode(this.ringMesh);
 
     this.surfaceTexture.dispose();
+    if (this.normalTexture) this.normalTexture.dispose();
     if (this.specularTexture) this.specularTexture.dispose();
     if (this.nightTexture) this.nightTexture.dispose();
     if (this.ringTexture) this.ringTexture.dispose();
