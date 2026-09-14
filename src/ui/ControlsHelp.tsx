@@ -20,6 +20,10 @@ export const ControlsHelp: React.FC = () => {
         <span>Pause Spin</span>
       </div>
       <div className="control-item">
+        <span className="control-key">M</span>
+        <span>Satellite Map</span>
+      </div>
+      <div className="control-item">
         <span className="control-key">R</span>
         <span>Reset</span>
       </div>

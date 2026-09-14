@@ -3,6 +3,7 @@ import { Game } from './game/Game';
 import { HUD } from './ui/HUD';
 import { PlanetSelector } from './ui/PlanetSelector';
 import { SettingsModal } from './ui/SettingsModal';
+import { SatelliteMapModal } from './ui/SatelliteViewModal';
 import { LandingScreen } from './ui/LandingScreen';
 import { PLANET_PRESETS } from './data/planets';
 import { WEAPON_DEFINITIONS } from './data/weapons';
@@ -40,6 +41,7 @@ export const App: React.FC = () => {
   // Modals
   const [isPlanetSelectorOpen, setIsPlanetSelectorOpen] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isSatelliteMapOpen, setIsSatelliteMapOpen] = useState<boolean>(false);
 
   // Initialize Game on Mount
   useEffect(() => {
@@ -117,11 +119,14 @@ export const App: React.FC = () => {
       } else if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         handleToggleRotation();
+      } else if (e.key === 'm' || e.key === 'M') {
+        setIsSatelliteMapOpen((prev) => !prev);
       } else if (e.key === 'f' || e.key === 'F') {
         handleToggleFullscreen();
       } else if (e.key === 'Escape') {
         setIsPlanetSelectorOpen(false);
         setIsSettingsOpen(false);
+        setIsSatelliteMapOpen(false);
       } else if (e.key >= '1' && e.key <= '9') {
         const weaponIndex = parseInt(e.key, 10) - 1;
         if (weaponIndex < WEAPON_DEFINITIONS.length) {
@@ -153,6 +158,7 @@ export const App: React.FC = () => {
           onToggleRotation={handleToggleRotation}
           onSelectWeapon={handleSelectWeapon}
           onOpenPlanetSelector={() => setIsPlanetSelectorOpen(true)}
+          onOpenSatelliteMap={() => setIsSatelliteMapOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onReset={handleResetPlanet}
           onToggleFullscreen={handleToggleFullscreen}
@@ -165,6 +171,18 @@ export const App: React.FC = () => {
           activePlanetId={activePlanet.id}
           onSelectPlanet={handleSelectPlanet}
           onClose={() => setIsPlanetSelectorOpen(false)}
+        />
+      )}
+
+      {/* Orbital Satellite Map Reconnaissance Modal */}
+      {isSatelliteMapOpen && (
+        <SatelliteMapModal
+          planet={activePlanet}
+          targetInfo={targetInfo}
+          onClose={() => setIsSatelliteMapOpen(false)}
+          onJumpToCoordinates={(lat, lon) => {
+            gameRef.current?.focusOnCoordinates(lat, lon);
+          }}
         />
       )}
 

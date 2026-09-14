@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PlanetConfig } from '../types/planet';
 import { WeaponId, TargetInfo } from '../types/weapon';
 import { PlanetIntegrity } from '../types/game';
-import { RotateCcw, Sliders, Globe, Maximize, Users, AlertTriangle, Skull, Activity } from 'lucide-react';
+import { RotateCcw, Sliders, Globe, Maximize, Users, AlertTriangle, Skull, Activity, Satellite } from 'lucide-react';
 import { WeaponToolbar } from './WeaponToolbar';
 import { ControlsHelp } from './ControlsHelp';
 
@@ -15,6 +15,7 @@ interface HUDProps {
   onToggleRotation: () => void;
   onSelectWeapon: (id: WeaponId) => void;
   onOpenPlanetSelector: () => void;
+  onOpenSatelliteMap: () => void;
   onOpenSettings: () => void;
   onReset: () => void;
   onToggleFullscreen: () => void;
@@ -29,6 +30,7 @@ export const HUD: React.FC<HUDProps> = ({
   onToggleRotation,
   onSelectWeapon,
   onOpenPlanetSelector,
+  onOpenSatelliteMap,
   onOpenSettings,
   onReset,
   onToggleFullscreen,
@@ -101,6 +103,12 @@ export const HUD: React.FC<HUDProps> = ({
               {isRotationPaused && <div className="hud-checkbox-inner" />}
             </div>
             <span>{isRotationPaused ? 'Rotation Paused' : 'Rotate Planet'}</span>
+          </button>
+
+          {/* Orbital Satellite Map Reconnaissance */}
+          <button className="hud-btn btn-cyan" onClick={onOpenSatelliteMap} title="Open Satellite Reconnaissance Map (M)">
+            <Satellite size={16} />
+            <span>Satellite Map</span>
           </button>
 
           <button className="hud-btn btn-cyan" onClick={onOpenPlanetSelector} title="Select Planet">

@@ -90,9 +90,22 @@ export class CameraController {
   }
 
   public setPlanetRadius(radius: number): void {
-    this.minRadius = radius * 1.35;
+    this.minRadius = radius * 1.12; // Allow close satellite orbit inspection
     this.maxRadius = radius * 8.0;
     this.targetRadius = clamp(this.targetRadius, this.minRadius, this.maxRadius);
+  }
+
+  /**
+   * Smoothly locks the camera into low-orbital satellite inspection over target coordinates
+   */
+  public focusOnCoordinates(lat: number, lon: number, altitudeMultiplier: number = 1.35): void {
+    const phi = (90 - lat) * (Math.PI / 180);
+    const theta = (lon + 180) * (Math.PI / 180);
+
+    this.targetPhi = clamp(phi, this.minPhi, this.maxPhi);
+    // Adjust theta for current camera angle convention
+    this.targetTheta = -theta + Math.PI;
+    this.targetRadius = clamp(this.minRadius * altitudeMultiplier, this.minRadius, this.maxRadius);
   }
 
   public update(delta: number): void {

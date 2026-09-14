@@ -203,6 +203,10 @@ export class Game {
     this.planet.isRotationPaused = paused;
   }
 
+  public focusOnCoordinates(lat: number, lon: number): void {
+    this.cameraController.focusOnCoordinates(lat, lon);
+  }
+
   public resetPlanet(): void {
     this.particleSystem.clear();
     this.shockwaveSystem.clear();
