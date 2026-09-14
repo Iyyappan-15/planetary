@@ -11,6 +11,8 @@ interface HUDProps {
   integrity: PlanetIntegrity;
   targetInfo: TargetInfo | null;
   activeWeaponId: WeaponId;
+  isRotationPaused: boolean;
+  onToggleRotation: () => void;
   onSelectWeapon: (id: WeaponId) => void;
   onOpenPlanetSelector: () => void;
   onOpenSettings: () => void;
@@ -23,6 +25,8 @@ export const HUD: React.FC<HUDProps> = ({
   integrity,
   targetInfo,
   activeWeaponId,
+  isRotationPaused,
+  onToggleRotation,
   onSelectWeapon,
   onOpenPlanetSelector,
   onOpenSettings,
@@ -87,6 +91,18 @@ export const HUD: React.FC<HUDProps> = ({
 
         {/* Action Buttons */}
         <div className="hud-actions">
+          {/* Pause / Resume Rotation Checkbox Button */}
+          <button
+            className={`hud-btn hud-toggle-btn ${isRotationPaused ? 'active-warning' : ''}`}
+            onClick={onToggleRotation}
+            title={isRotationPaused ? 'Resume Planet Rotation (Space)' : 'Stop Planet Rotation (Space)'}
+          >
+            <div className={`hud-checkbox ${isRotationPaused ? 'checked' : ''}`}>
+              {isRotationPaused && <div className="hud-checkbox-inner" />}
+            </div>
+            <span>{isRotationPaused ? 'Rotation Paused' : 'Rotate Planet'}</span>
+          </button>
+
           <button className="hud-btn btn-cyan" onClick={onOpenPlanetSelector} title="Select Planet">
             <Globe size={16} />
             <span>Planets</span>

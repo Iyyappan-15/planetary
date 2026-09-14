@@ -16,6 +16,10 @@ export const ControlsHelp: React.FC = () => {
         <span>Fire</span>
       </div>
       <div className="control-item">
+        <span className="control-key">Space</span>
+        <span>Pause Spin</span>
+      </div>
+      <div className="control-item">
         <span className="control-key">R</span>
         <span>Reset</span>
       </div>

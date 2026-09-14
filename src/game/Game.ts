@@ -39,6 +39,7 @@ export class Game {
   private currentMouseX: number = 0;
   private currentMouseY: number = 0;
   private wasDestroyed: boolean = false;
+  private isRotationPaused: boolean = false;
 
   constructor(canvas: HTMLCanvasElement, settings: GameSettings, callbacks: GameCallbacks = {}) {
     this.canvas = canvas;
@@ -173,6 +174,7 @@ export class Game {
 
     // Instantiate new planet
     this.planet = new Planet(newConfig, this.sceneManager.sunLight.position);
+    this.planet.isRotationPaused = this.isRotationPaused;
     this.sceneManager.scene.add(this.planet.group);
 
     this.cameraController.setPlanetRadius(newConfig.radius);
@@ -194,6 +196,11 @@ export class Game {
     this.weaponManager.setActiveWeapon(id, context);
     this.callbacks.onActiveWeaponChange?.(id);
     this.audioManager.playUiClick();
+  }
+
+  public setRotationPaused(paused: boolean): void {
+    this.isRotationPaused = paused;
+    this.planet.isRotationPaused = paused;
   }
 
   public resetPlanet(): void {

@@ -29,6 +29,7 @@ export class Planet {
   private ringTexture: THREE.Texture | null = null;
 
   public isDestroyed: boolean = false;
+  public isRotationPaused: boolean = false;
 
   constructor(config: PlanetConfig, sunDirection: THREE.Vector3) {
     this.config = config;
@@ -149,9 +150,11 @@ export class Planet {
   public update(delta: number, sunDirection: THREE.Vector3, gravityWellPos?: THREE.Vector3 | null): void {
     // Planet axial rotation
     if (!this.isDestroyed) {
-      this.surfaceMesh.rotation.y += this.config.rotationSpeed * delta;
-      if (this.clouds) {
-        this.clouds.update(delta);
+      if (!this.isRotationPaused) {
+        this.surfaceMesh.rotation.y += this.config.rotationSpeed * delta;
+        if (this.clouds) {
+          this.clouds.update(delta);
+        }
       }
       if (this.atmosphere) {
         this.atmosphere.update(delta, sunDirection);

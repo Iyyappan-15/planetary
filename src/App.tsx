@@ -20,6 +20,7 @@ export const App: React.FC = () => {
   const [settings, setSettings] = useState<GameSettings>(loadStoredSettings());
   const [activePlanet, setActivePlanet] = useState<PlanetConfig>(PLANET_PRESETS[0]);
   const [activeWeaponId, setActiveWeaponId] = useState<WeaponId>('meteor');
+  const [isRotationPaused, setIsRotationPaused] = useState<boolean>(false);
   const [integrity, setIntegrity] = useState<PlanetIntegrity>({
     currentHp: 100,
     maxHp: 100,
@@ -76,6 +77,14 @@ export const App: React.FC = () => {
     gameRef.current?.resetPlanet();
   }, []);
 
+  const handleToggleRotation = useCallback(() => {
+    setIsRotationPaused((prev) => {
+      const next = !prev;
+      gameRef.current?.setRotationPaused(next);
+      return next;
+    });
+  }, []);
+
   const handleUpdateSettings = useCallback((newSettings: GameSettings) => {
     setSettings(newSettings);
     saveStoredSettings(newSettings);
@@ -105,6 +114,9 @@ export const App: React.FC = () => {
 
       if (e.key === 'r' || e.key === 'R') {
         handleResetPlanet();
+      } else if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        handleToggleRotation();
       } else if (e.key === 'f' || e.key === 'F') {
         handleToggleFullscreen();
       } else if (e.key === 'Escape') {
@@ -120,7 +132,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleResetPlanet, handleToggleFullscreen, handleSelectWeapon]);
+  }, [handleResetPlanet, handleToggleRotation, handleToggleFullscreen, handleSelectWeapon]);
 
   return (
     <div className="planetary-container">
@@ -137,6 +149,8 @@ export const App: React.FC = () => {
           integrity={integrity}
           targetInfo={targetInfo}
           activeWeaponId={activeWeaponId}
+          isRotationPaused={isRotationPaused}
+          onToggleRotation={handleToggleRotation}
           onSelectWeapon={handleSelectWeapon}
           onOpenPlanetSelector={() => setIsPlanetSelectorOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}

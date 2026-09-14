@@ -190,6 +190,53 @@ body, html, #root {
   box-shadow: 0 0 12px rgba(255, 68, 68, 0.4);
 }
 
+/* Sci-Fi Toggle Checkbox Button */
+.hud-btn.hud-toggle-btn {
+  border-color: rgba(255, 255, 255, 0.18);
+  color: var(--hud-text-main);
+  user-select: none;
+}
+
+.hud-btn.hud-toggle-btn:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.hud-btn.hud-toggle-btn.active-warning {
+  border-color: rgba(255, 170, 51, 0.6);
+  background: rgba(255, 170, 51, 0.12);
+  color: #ffaa33;
+  box-shadow: 0 0 10px rgba(255, 170, 51, 0.25);
+}
+
+.hud-checkbox {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.hud-btn:hover .hud-checkbox {
+  border-color: #fff;
+}
+
+.hud-checkbox.checked {
+  border-color: #ffaa33;
+  background: rgba(255, 170, 51, 0.25);
+  box-shadow: 0 0 6px rgba(255, 170, 51, 0.4);
+}
+
+.hud-checkbox-inner {
+  width: 6px;
+  height: 6px;
+  background: #ffaa33;
+  border-radius: 1px;
+}
+
 /* ================= WEAPON TOOLBAR ================= */
 
 .weapon-toolbar {
