@@ -38,6 +38,7 @@ export class Game {
   private isPointerOverCanvas: boolean = false;
   private currentMouseX: number = 0;
   private currentMouseY: number = 0;
+  private wasDestroyed: boolean = false;
 
   constructor(canvas: HTMLCanvasElement, settings: GameSettings, callbacks: GameCallbacks = {}) {
     this.canvas = canvas;
@@ -144,6 +145,14 @@ export class Game {
     // Notify integrity changes
     const integrity = this.planet.getIntegrity();
     this.callbacks.onIntegrityChange?.(integrity);
+
+    if (this.planet.isDestroyed && !this.wasDestroyed) {
+      this.wasDestroyed = true;
+      this.audioManager.playPlanetBreakup();
+      this.cameraController.addTrauma(0.95);
+    } else if (!this.planet.isDestroyed && this.wasDestroyed) {
+      this.wasDestroyed = false;
+    }
   }
 
   private render(): void {
@@ -168,6 +177,7 @@ export class Game {
 
     this.cameraController.setPlanetRadius(newConfig.radius);
     this.cameraController.resetCamera();
+    this.wasDestroyed = false;
 
     this.audioManager.playReset();
   }
@@ -191,6 +201,7 @@ export class Game {
     this.shockwaveSystem.clear();
     this.planet.reset();
     this.cameraController.resetCamera();
+    this.wasDestroyed = false;
     this.audioManager.playReset();
   }
 

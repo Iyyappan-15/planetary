@@ -63,7 +63,7 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
         // Lighting calculation (day / night terminator)
         vec3 sunDir = normalize(uSunDirection);
         vec3 normal = normalize(vWorldNormal);
-        vec3 viewDir = normalize(vViewPosition);
+        vec3 viewDir = normalize(cameraPosition - vWorldPosition);
 
         float NdotL = dot(normal, sunDir);
         float dayFactor = smoothstep(-0.15, 0.25, NdotL);
