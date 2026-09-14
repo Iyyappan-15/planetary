@@ -19,7 +19,8 @@ export class ShockwaveSystem {
   }
 
   public create(position: THREE.Vector3, normal: THREE.Vector3, maxRadius: number = 2.0, colorHex: string = '#ff9933'): void {
-    const geometry = new THREE.RingGeometry(0.05, 0.25, 32);
+    // Sharp supersonic ring geometry
+    const geometry = new THREE.RingGeometry(0.88, 1.0, 64);
     const material = new THREE.MeshBasicMaterial({
       color: new THREE.Color(colorHex),
       transparent: true,
@@ -32,14 +33,15 @@ export class ShockwaveSystem {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.copy(position.clone().addScaledVector(normal, 0.03));
     mesh.lookAt(position.clone().add(normal));
+    mesh.scale.set(0.05, 0.05, 0.05);
 
     this.group.add(mesh);
 
     this.shockwaves.push({
       mesh,
       maxRadius,
-      currentRadius: 0.2,
-      expansionSpeed: maxRadius * 3.5,
+      currentRadius: 0.05,
+      expansionSpeed: maxRadius * 3.8,
       opacity: 0.95,
       color: new THREE.Color(colorHex),
     });

@@ -8,10 +8,8 @@ export class SceneManager {
   public sunLight: THREE.DirectionalLight;
   public ambientLight: THREE.AmbientLight;
   private starField: THREE.Points | null = null;
-  private canvas: HTMLCanvasElement;
 
   constructor(canvas: HTMLCanvasElement, settings: GraphicsSettings) {
-    this.canvas = canvas;
     this.scene = new THREE.Scene();
 
     this.renderer = new THREE.WebGLRenderer({
@@ -24,15 +22,15 @@ export class SceneManager {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, settings.pixelRatio));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.1;
+    this.renderer.toneMappingExposure = 1.35;
 
-    // Deep space lighting
-    this.sunLight = new THREE.DirectionalLight(0xffffff, 2.8);
-    this.sunLight.position.set(15, 8, 12).normalize().multiplyScalar(20);
+    // Dramatic celestial sun illumination (shining from front-right)
+    this.sunLight = new THREE.DirectionalLight(0xfffdf5, 3.4);
+    this.sunLight.position.set(12, 5, 14).normalize().multiplyScalar(25);
     this.scene.add(this.sunLight);
 
-    // Subtle space ambient fill for the dark side
-    this.ambientLight = new THREE.AmbientLight(0x0c1220, 0.4);
+    // Deep space ambient fill (ensures unlit side is visible with realistic space contrast)
+    this.ambientLight = new THREE.AmbientLight(0x18243b, 0.65);
     this.scene.add(this.ambientLight);
 
     this.createSpaceEnvironment();
@@ -40,7 +38,7 @@ export class SceneManager {
 
   private createSpaceEnvironment(): void {
     // Generate multi-magnitude procedural starfield
-    const starCount = 2500;
+    const starCount = 3000;
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(starCount * 3);
     const colors = new Float32Array(starCount * 3);
@@ -48,40 +46,33 @@ export class SceneManager {
 
     const starPalettes = [
       new THREE.Color(0xffffff), // Pure white
-      new THREE.Color(0xcfe2ff), // Blue-white
-      new THREE.Color(0xfff3cd), // Warm yellow
-      new THREE.Color(0xffd8a8), // Soft orange
-      new THREE.Color(0x99b9ff), // Deep blue
+      new THREE.Color(0xdbeafe), // Blue-white
+      new THREE.Color(0xfef3c7), // Warm yellow
+      new THREE.Color(0xfed7aa), // Soft orange
+      new THREE.Color(0x93c5fd), // Cyan-blue
     ];
 
     for (let i = 0; i < starCount; i++) {
-      // Distribute stars on a large sphere surrounding the scene
-      const radius = 250 + Math.random() * 150;
+      const radius = 250 + Math.random() * 200;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
 
-      const x = radius * Math.sin(phi) * Math.cos(theta);
-      const y = radius * Math.sin(phi) * Math.sin(theta);
-      const z = radius * Math.cos(phi);
-
-      positions[i * 3] = x;
-      positions[i * 3 + 1] = y;
-      positions[i * 3 + 2] = z;
+      positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      positions[i * 3 + 2] = radius * Math.cos(phi);
 
       const color = starPalettes[Math.floor(Math.random() * starPalettes.length)];
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
 
-      // Varied star brightness / size
-      sizes[i] = Math.random() < 0.9 ? 1.0 + Math.random() * 1.5 : 2.5 + Math.random() * 2.0;
+      sizes[i] = Math.random() < 0.92 ? 1.0 + Math.random() * 1.4 : 2.4 + Math.random() * 2.0;
     }
 
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-    // Custom shader or particle material for clean, twinkling stars
     const material = new THREE.PointsMaterial({
       size: 1.8,
       vertexColors: true,

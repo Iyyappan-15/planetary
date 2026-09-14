@@ -69,8 +69,8 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
         float dayFactor = smoothstep(-0.15, 0.25, NdotL);
         float nightFactor = 1.0 - dayFactor;
 
-        // Diffuse lighting
-        vec3 diffuse = scorchedColor * (0.05 + 0.95 * dayFactor);
+        // Diffuse lighting with realistic deep-space ambient fill
+        vec3 diffuse = scorchedColor * (0.16 + 0.84 * dayFactor);
 
         // Specular highlight on oceans (day side only)
         if (uHasOcean > 0.5) {

@@ -3,12 +3,71 @@ import { ProceduralNoise } from './noise';
 import { SurfaceProfile } from '../types/planet';
 
 export class ProceduralTextures {
-  private static noise = new ProceduralNoise(12345);
+  private static noise = new ProceduralNoise(777);
 
   /**
-   * Generates procedural Earth surface texture (continents, oceans, mountain ridges, polar ice)
+   * Helper determining continental land probability based on realistic Earth geography
    */
-  public static createEarthSurfaceTexture(width: number = 1024, height: number = 512): THREE.CanvasTexture {
+  private static getContinentalFactor(latDeg: number, lonDeg: number): number {
+    let landScore = 0;
+
+    // 1. Antarctica
+    if (latDeg < -62) {
+      return 1.0;
+    }
+
+    // 2. North America (lat 15..72, lon -168..-50)
+    if (latDeg >= 15 && latDeg <= 72 && lonDeg >= -168 && lonDeg <= -50) {
+      const dLat = (latDeg - 45) / 28;
+      const dLon = (lonDeg - (-105)) / 50;
+      const dist = dLat * dLat + dLon * dLon;
+      if (dist < 1.0) landScore = Math.max(landScore, 1.0 - dist);
+    }
+
+    // 3. South America (lat -55..12, lon -82..-34)
+    if (latDeg >= -55 && latDeg <= 12 && lonDeg >= -82 && lonDeg <= -34) {
+      const dLat = (latDeg - (-20)) / 32;
+      const dLon = (lonDeg - (-60)) / 22;
+      const dist = dLat * dLat + dLon * dLon;
+      if (dist < 1.0) landScore = Math.max(landScore, 1.0 - dist);
+    }
+
+    // 4. Africa (lat -35..37, lon -18..52)
+    if (latDeg >= -35 && latDeg <= 37 && lonDeg >= -18 && lonDeg <= 52) {
+      const dLat = (latDeg - 2) / 34;
+      const dLon = (lonDeg - 18) / 32;
+      const dist = dLat * dLat + dLon * dLon;
+      if (dist < 1.0) landScore = Math.max(landScore, 1.0 - dist);
+    }
+
+    // 5. Europe & Asia (Eurasia: lat 10..76, lon -10..170)
+    if (latDeg >= 10 && latDeg <= 76 && lonDeg >= -10 && lonDeg <= 170) {
+      const dLat = (latDeg - 46) / 30;
+      const dLon = (lonDeg - 85) / 80;
+      const dist = dLat * dLat + dLon * dLon;
+      if (dist < 1.0) landScore = Math.max(landScore, 1.0 - dist);
+    }
+
+    // 6. Australia (lat -42..-10, lon 112..154)
+    if (latDeg >= -42 && latDeg <= -10 && lonDeg >= 112 && lonDeg <= 154) {
+      const dLat = (latDeg - (-25)) / 15;
+      const dLon = (lonDeg - 133) / 20;
+      const dist = dLat * dLat + dLon * dLon;
+      if (dist < 1.0) landScore = Math.max(landScore, 1.0 - dist);
+    }
+
+    // 7. Greenland (lat 60..83, lon -70..-20)
+    if (latDeg >= 60 && latDeg <= 83 && lonDeg >= -70 && lonDeg <= -20) {
+      landScore = Math.max(landScore, 0.9);
+    }
+
+    return landScore;
+  }
+
+  /**
+   * Generates photorealistic procedural Earth surface map
+   */
+  public static createEarthSurfaceTexture(width: number = 2048, height: number = 1024): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -20,58 +79,92 @@ export class ProceduralTextures {
 
     for (let y = 0; y < height; y++) {
       const v = y / height;
-      const lat = (0.5 - v) * Math.PI; // -pi/2 to +pi/2
-      const isPolar = Math.abs(lat) > 1.15; // Polar regions
+      const latDeg = (0.5 - v) * 180; // -90 to +90
+      const latRad = (latDeg * Math.PI) / 180;
 
       for (let x = 0; x < width; x++) {
         const u = x / width;
-        const lon = u * Math.PI * 2;
+        const lonDeg = u * 360 - 180; // -180 to +180
+        const lonRad = (lonDeg * Math.PI) / 180;
 
-        // Spherical 3D coordinates for seamless noise
-        const nx = Math.cos(lat) * Math.sin(lon);
-        const ny = Math.sin(lat);
-        const nz = Math.cos(lat) * Math.cos(lon);
+        // 3D coordinates on unit sphere
+        const nx = Math.cos(latRad) * Math.sin(lonRad);
+        const ny = Math.sin(latRad);
+        const nz = Math.cos(latRad) * Math.cos(lonRad);
 
-        // Continental land elevation via 3D noise
-        let elevation = noise.fbm2D(nx * 1.8 + 2.5, ny * 1.8 + nz * 1.8 + 2.5, 6, 2.0, 0.5);
+        // Continental plate template
+        const continentFactor = this.getContinentalFactor(latDeg, lonDeg);
 
-        // Polar cap modulation
-        const polarBlend = Math.max(0, (Math.abs(ny) - 0.75) / 0.25);
+        // Multi-octave fractal noise for coastal roughness and mountain topology
+        const terrainNoise = (noise.fbm2D(nx * 3.2 + 10, ny * 3.2 + nz * 3.2 + 10, 6, 2.0, 0.5) + 1.0) * 0.5;
+        const microNoise = (noise.fbm2D(nx * 12.0, ny * 12.0 + nz * 12.0, 3, 2.0, 0.5) + 1.0) * 0.5;
+
+        // Final elevation blend
+        const elevation = continentFactor * 0.65 + terrainNoise * 0.45 + microNoise * 0.08;
+        const isLand = elevation > 0.48;
 
         let r = 0, g = 0, b = 0;
 
-        if (polarBlend > 0.6 || (isPolar && elevation > 0.35)) {
-          // Polar ice cap
-          r = 230 + Math.floor(Math.random() * 25);
-          g = 240 + Math.floor(Math.random() * 15);
+        // Polar Ice Caps
+        if (latDeg > 74 || latDeg < -64) {
+          r = 235 + Math.floor(microNoise * 20);
+          g = 242 + Math.floor(microNoise * 13);
           b = 255;
-        } else if (elevation < 0.46) {
-          // Deep ocean to shallow coastal waters
-          const oceanDepth = elevation / 0.46;
-          r = Math.floor(10 + oceanDepth * 25);
-          g = Math.floor(35 + oceanDepth * 70);
-          b = Math.floor(75 + oceanDepth * 95);
-        } else if (elevation < 0.50) {
-          // Sandy coastline / beaches
-          r = 195;
-          g = 180;
-          b = 135;
-        } else if (elevation < 0.65) {
-          // Fertile lowland / forests
-          const landGrad = (elevation - 0.50) / 0.15;
-          r = Math.floor(35 + landGrad * 40);
-          g = Math.floor(95 + landGrad * 35);
-          b = Math.floor(40 + landGrad * 10);
-        } else if (elevation < 0.78) {
-          // Highlands / plateaus
-          r = 120 + Math.floor((elevation - 0.65) * 200);
-          g = 100 + Math.floor((elevation - 0.65) * 120);
-          b = 65;
+        } else if (!isLand) {
+          // OCEAN
+          const depth = Math.max(0, Math.min(1, (0.48 - elevation) / 0.48));
+          if (depth < 0.12) {
+            // Shallow tropical coastline / turquoise reef shelf
+            const t = depth / 0.12;
+            r = Math.floor(28 + (15 - 28) * t);
+            g = Math.floor(135 + (65 - 135) * t);
+            b = Math.floor(165 + (125 - 165) * t);
+          } else {
+            // Deep sapphire to midnight blue oceanic abyss
+            const t = (depth - 0.12) / 0.88;
+            r = Math.floor(12 + (6 - 12) * t);
+            g = Math.floor(45 + (18 - 45) * t);
+            b = Math.floor(105 + (48 - 105) * t);
+          }
         } else {
-          // High mountain peaks / snow tops
-          r = 210;
-          g = 215;
-          b = 220;
+          // LAND
+          const landHeight = (elevation - 0.48) / 0.52;
+
+          // Check for arid / desert latitude belts (Sahara, Arabia, Australia)
+          const isSahara = latDeg >= 15 && latDeg <= 32 && lonDeg >= -15 && lonDeg <= 55;
+          const isAussieOutback = latDeg >= -32 && latDeg <= -18 && lonDeg >= 115 && lonDeg <= 145;
+          const isGobi = latDeg >= 38 && latDeg <= 46 && lonDeg >= 90 && lonDeg <= 115;
+          const isDesert = isSahara || isAussieOutback || isGobi;
+
+          if (landHeight < 0.03) {
+            // Sandy coastline / beach rim
+            r = 195;
+            g = 182;
+            b = 142;
+          } else if (isDesert && landHeight < 0.45) {
+            // Warm golden Sahara / Australian desert sand
+            const dt = landHeight / 0.45;
+            r = Math.floor(205 + dt * 25);
+            g = Math.floor(165 + dt * 20);
+            b = Math.floor(105 + dt * 15);
+          } else if (landHeight < 0.42) {
+            // Lush lowland forests, plains, temperate river valleys
+            const lt = landHeight / 0.42;
+            r = Math.floor(38 + lt * 30);
+            g = Math.floor(95 + lt * 25);
+            b = Math.floor(42 + lt * 10);
+          } else if (landHeight < 0.72) {
+            // Rocky mountain ranges / plateaus (Andes, Rockies, Alps)
+            const mt = (landHeight - 0.42) / 0.3;
+            r = Math.floor(115 + mt * 45);
+            g = Math.floor(98 + mt * 35);
+            b = Math.floor(72 + mt * 25);
+          } else {
+            // High altitude snow-capped summits (Himalayas)
+            r = 230;
+            g = 235;
+            b = 245;
+          }
         }
 
         const idx = (y * width + x) * 4;
@@ -91,9 +184,9 @@ export class ProceduralTextures {
   }
 
   /**
-   * Ocean specular mask: White where oceans are (highly reflective), dark on land
+   * Ocean specular mask: Bright reflective white on water, non-reflective on land
    */
-  public static createEarthSpecularTexture(width: number = 512, height: number = 256): THREE.CanvasTexture {
+  public static createEarthSpecularTexture(width: number = 1024, height: number = 512): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -105,19 +198,26 @@ export class ProceduralTextures {
 
     for (let y = 0; y < height; y++) {
       const v = y / height;
-      const lat = (0.5 - v) * Math.PI;
+      const latDeg = (0.5 - v) * 180;
+      const latRad = (latDeg * Math.PI) / 180;
 
       for (let x = 0; x < width; x++) {
         const u = x / width;
-        const lon = u * Math.PI * 2;
-        const nx = Math.cos(lat) * Math.sin(lon);
-        const ny = Math.sin(lat);
-        const nz = Math.cos(lat) * Math.cos(lon);
+        const lonDeg = u * 360 - 180;
+        const lonRad = (lonDeg * Math.PI) / 180;
 
-        const elevation = noise.fbm2D(nx * 1.8 + 2.5, ny * 1.8 + nz * 1.8 + 2.5, 6, 2.0, 0.5);
-        const isWater = elevation < 0.46;
+        const nx = Math.cos(latRad) * Math.sin(lonRad);
+        const ny = Math.sin(latRad);
+        const nz = Math.cos(latRad) * Math.cos(lonRad);
 
-        const val = isWater ? 230 : 15;
+        const continentFactor = this.getContinentalFactor(latDeg, lonDeg);
+        const terrainNoise = (noise.fbm2D(nx * 3.2 + 10, ny * 3.2 + nz * 3.2 + 10, 6, 2.0, 0.5) + 1.0) * 0.5;
+        const elevation = continentFactor * 0.65 + terrainNoise * 0.45;
+        const isLand = elevation > 0.48;
+
+        // Water reflects sharply; land is matte
+        const val = isLand ? 15 : 240;
+
         const idx = (y * width + x) * 4;
         data[idx] = val;
         data[idx + 1] = val;
@@ -134,9 +234,9 @@ export class ProceduralTextures {
   }
 
   /**
-   * Night lights texture: Glowing golden-amber city lights on the dark side
+   * Night lights texture: Glowing amber city lights along populated coastlines
    */
-  public static createEarthNightLightsTexture(width: number = 512, height: number = 256): THREE.CanvasTexture {
+  public static createEarthNightLightsTexture(width: number = 1024, height: number = 512): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -148,32 +248,36 @@ export class ProceduralTextures {
 
     for (let y = 0; y < height; y++) {
       const v = y / height;
-      const lat = (0.5 - v) * Math.PI;
-      const polar = Math.abs(lat) > 1.1;
+      const latDeg = (0.5 - v) * 180;
+      const latRad = (latDeg * Math.PI) / 180;
 
       for (let x = 0; x < width; x++) {
         const u = x / width;
-        const lon = u * Math.PI * 2;
-        const nx = Math.cos(lat) * Math.sin(lon);
-        const ny = Math.sin(lat);
-        const nz = Math.cos(lat) * Math.cos(lon);
+        const lonDeg = u * 360 - 180;
+        const lonRad = (lonDeg * Math.PI) / 180;
 
-        const elevation = noise.fbm2D(nx * 1.8 + 2.5, ny * 1.8 + nz * 1.8 + 2.5, 6, 2.0, 0.5);
-        const isLand = elevation >= 0.46 && !polar;
+        const nx = Math.cos(latRad) * Math.sin(lonRad);
+        const ny = Math.sin(latRad);
+        const nz = Math.cos(latRad) * Math.cos(lonRad);
+
+        const continentFactor = this.getContinentalFactor(latDeg, lonDeg);
+        const terrainNoise = (noise.fbm2D(nx * 3.2 + 10, ny * 3.2 + nz * 3.2 + 10, 6, 2.0, 0.5) + 1.0) * 0.5;
+        const elevation = continentFactor * 0.65 + terrainNoise * 0.45;
+        const isLand = elevation > 0.48 && latDeg > -55 && latDeg < 70;
 
         let light = 0;
         if (isLand) {
-          // City density clusters
-          const cityNoise = noise.fbm2D(nx * 8.0 + 10, ny * 8.0 + nz * 8.0 + 10, 4, 2.0, 0.5);
-          if (cityNoise > 0.58) {
-            light = Math.pow((cityNoise - 0.58) / 0.42, 2.2) * 255;
+          // Metropolitan density clusters
+          const cityCluster = (noise.fbm2D(nx * 14.0 + 30, ny * 14.0 + nz * 14.0 + 30, 4, 2.0, 0.5) + 1.0) * 0.5;
+          if (cityCluster > 0.58) {
+            light = Math.pow((cityCluster - 0.58) / 0.42, 2.5) * 255;
           }
         }
 
         const idx = (y * width + x) * 4;
-        data[idx] = Math.min(255, Math.floor(light * 1.2)); // Golden-orange
+        data[idx] = Math.min(255, Math.floor(light * 1.15)); // Warm amber
         data[idx + 1] = Math.min(255, Math.floor(light * 0.85));
-        data[idx + 2] = Math.min(255, Math.floor(light * 0.45));
+        data[idx + 2] = Math.min(255, Math.floor(light * 0.4));
         data[idx + 3] = 255;
       }
     }
@@ -186,7 +290,7 @@ export class ProceduralTextures {
   }
 
   /**
-   * Procedural swirling cloud texture with alpha transparency
+   * Procedural swirling cloud texture with soft realistic wisps
    */
   public static createCloudTexture(width: number = 1024, height: number = 512, seed: number = 99): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
@@ -209,17 +313,17 @@ export class ProceduralTextures {
         const ny = Math.sin(lat);
         const nz = Math.cos(lat) * Math.cos(lon);
 
-        // Swirling bands with Coriolis-style shear
-        const swirlX = nx + Math.sin(ny * 4.0) * 0.15;
-        const swirlZ = nz + Math.cos(ny * 4.0) * 0.15;
+        // Coriolis shear swirl
+        const swirlX = nx + Math.sin(ny * 3.5) * 0.12;
+        const swirlZ = nz + Math.cos(ny * 3.5) * 0.12;
 
-        let density = cloudNoise.fbm2D(swirlX * 2.5 + 5, ny * 3.5 + swirlZ * 2.5 + 5, 5, 2.1, 0.52);
+        let density = (cloudNoise.fbm2D(swirlX * 3.0 + 8, ny * 4.0 + swirlZ * 3.0 + 8, 5, 2.0, 0.5) + 1.0) * 0.5;
 
-        // Soft thresholding for fluffy cloud banks
-        density = Math.max(0, (density - 0.42) / 0.45);
-        density = Math.min(1, Math.pow(density, 1.4));
+        // Soft thresholding
+        density = Math.max(0, (density - 0.44) / 0.46);
+        density = Math.pow(density, 1.3);
 
-        const alpha = Math.floor(density * 225);
+        const alpha = Math.floor(density * 210);
         const idx = (y * width + x) * 4;
         data[idx] = 255;
         data[idx + 1] = 255;
@@ -236,7 +340,7 @@ export class ProceduralTextures {
   }
 
   /**
-   * Procedural texture generator for other planets (Mars, Jupiter, Saturn, Fictional)
+   * Surface texture for other planets (Mars, Jupiter, Saturn, Fictional)
    */
   public static createSurfaceTexture(profile: SurfaceProfile, width: number = 1024, height: number = 512): THREE.CanvasTexture {
     if (profile.type === 'earth_like') {
@@ -270,34 +374,30 @@ export class ProceduralTextures {
         let accent = 0;
 
         if (profile.type === 'gas_giant') {
-          // Atmospheric bands with turbulent vortices (Jupiter / Saturn style)
+          // Atmospheric bands with turbulent vortices (Jupiter / Saturn)
           const bandNoise = noise.noise2D(nx * 0.5, ny * 16.0);
-          const turbulence = noise.fbm2D(nx * 4.0, ny * 8.0 + nz * 4.0, 4, 2.0, 0.5);
-          t = Math.sin(ny * 25.0 + bandNoise * 2.0 + turbulence * 1.5) * 0.5 + 0.5;
+          const turbulence = (noise.fbm2D(nx * 4.0, ny * 8.0 + nz * 4.0, 4, 2.0, 0.5) + 1.0) * 0.5;
+          t = Math.sin(ny * 24.0 + bandNoise * 2.0 + turbulence * 1.5) * 0.5 + 0.5;
 
-          // Great spot / storms
-          const spotDist = Math.hypot(nx - 0.5, ny + 0.35, nz - 0.2);
+          // Storm spot
+          const spotDist = Math.hypot(nx - 0.45, ny + 0.3, nz - 0.25);
           if (spotDist < 0.28) {
             accent = Math.max(0, 1 - spotDist / 0.28);
           }
         } else if (profile.type === 'volcanic') {
-          // Cracked magma veins
-          const base = noise.fbm2D(nx * 2.0, ny * 2.0 + nz * 2.0, 5, 2.0, 0.5);
+          t = (noise.fbm2D(nx * 2.2, ny * 2.2 + nz * 2.2, 5, 2.0, 0.5) + 1.0) * 0.5;
           const veins = Math.abs(noise.noise3D(nx * 6.0, ny * 6.0, nz * 6.0));
-          t = base;
-          accent = veins < 0.12 ? (1 - veins / 0.12) : 0;
+          accent = veins < 0.12 ? 1 - veins / 0.12 : 0;
         } else {
           // Rocky desert (Mars), Ice world, or Oceanic
-          t = noise.fbm2D(nx * 2.2, ny * 2.2 + nz * 2.2, 5, 2.0, 0.5);
+          t = (noise.fbm2D(nx * 2.5, ny * 2.5 + nz * 2.5, 5, 2.0, 0.5) + 1.0) * 0.5;
           if (profile.type === 'rocky_desert') {
-            // Polar dry ice caps on Mars
-            if (Math.abs(ny) > 0.88) {
-              accent = Math.min(1, (Math.abs(ny) - 0.88) / 0.1);
+            if (Math.abs(ny) > 0.86) {
+              accent = Math.min(1, (Math.abs(ny) - 0.86) / 0.12);
             }
           }
         }
 
-        // Interpolate colors
         let finalCol = colA.clone().lerp(colB, t);
         if (accent > 0) {
           finalCol.lerp(colAccent, accent);
@@ -331,13 +431,12 @@ export class ProceduralTextures {
     const data = imgData.data;
 
     for (let x = 0; x < width; x++) {
-      const u = x / width; // Radial position from inner to outer edge
-      // Cassini division gap and varied dust density bands
+      const u = x / width;
       let opacity = Math.sin(u * Math.PI) * 0.85;
       if (u > 0.58 && u < 0.65) {
         opacity *= 0.1; // Cassini division
       }
-      opacity *= (0.7 + 0.3 * Math.sin(u * 120.0));
+      opacity *= 0.7 + 0.3 * Math.sin(u * 120.0);
 
       const r = Math.floor((190 + Math.sin(u * 10) * 30) * 0.95);
       const g = Math.floor((175 + Math.sin(u * 10) * 25) * 0.95);

@@ -38,17 +38,19 @@ export class WeaponManager {
     this.registerWeapon(new GlassmakerWeapon());
     this.registerWeapon(new MoonfallWeapon());
 
-    // 2. Build 3D targeting reticle
-    const markerGeo = new THREE.RingGeometry(0.08, 0.12, 32);
+    // 2. Build 3D targeting reticle (depthTest: false prevents clipping into planet mesh)
+    const markerGeo = new THREE.RingGeometry(0.06, 0.09, 32);
     const markerMat = new THREE.MeshBasicMaterial({
       color: 0x00ffcc,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.9,
       blending: THREE.AdditiveBlending,
+      depthTest: false,
       depthWrite: false,
     });
     this.targetMarker = new THREE.Mesh(markerGeo, markerMat);
+    this.targetMarker.renderOrder = 999;
     this.targetMarker.visible = false;
   }
 

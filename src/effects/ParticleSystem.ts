@@ -11,6 +11,27 @@ interface Particle {
   maxLife: number;
 }
 
+function createParticleTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+
+  // Smooth radial glow
+  const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+  grad.addColorStop(0.2, 'rgba(255, 230, 180, 0.85)');
+  grad.addColorStop(0.5, 'rgba(255, 120, 30, 0.35)');
+  grad.addColorStop(0.8, 'rgba(255, 60, 10, 0.1)');
+  grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 64, 64);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  return texture;
+}
+
 export class ParticleSystem {
   public group: THREE.Group;
   private maxParticles: number;
@@ -23,6 +44,7 @@ export class ParticleSystem {
 
   private geometry: THREE.BufferGeometry;
   private material: THREE.PointsMaterial;
+  private spriteTexture: THREE.CanvasTexture;
 
   constructor(maxParticles: number = 1000) {
     this.maxParticles = maxParticles;
@@ -38,7 +60,7 @@ export class ParticleSystem {
         position: new THREE.Vector3(0, 0, 0),
         velocity: new THREE.Vector3(0, 0, 0),
         color: new THREE.Color(1, 1, 1),
-        size: 1.0,
+        size: 0.1,
         life: 0,
         maxLife: 1.0,
       });
@@ -50,8 +72,11 @@ export class ParticleSystem {
     this.geometry.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
     this.geometry.setAttribute('size', new THREE.BufferAttribute(this.sizes, 1));
 
+    this.spriteTexture = createParticleTexture();
+
     this.material = new THREE.PointsMaterial({
-      size: 2.5,
+      size: 0.16,
+      map: this.spriteTexture,
       vertexColors: true,
       transparent: true,
       opacity: 0.95,
@@ -69,9 +94,9 @@ export class ParticleSystem {
     direction: THREE.Vector3,
     count: number,
     colorHex: string = '#ff7700',
-    speedMin: number = 1.0,
-    speedMax: number = 4.0,
-    lifespan: number = 1.5,
+    speedMin: number = 0.8,
+    speedMax: number = 3.2,
+    lifespan: number = 1.2,
     spread: number = 0.8
   ): void {
     const baseColor = new THREE.Color(colorHex);
@@ -97,12 +122,12 @@ export class ParticleSystem {
 
       // Color variation
       p.color.copy(baseColor);
-      p.color.r = Math.min(1, p.color.r * (0.8 + Math.random() * 0.4));
-      p.color.g = Math.min(1, p.color.g * (0.8 + Math.random() * 0.4));
+      p.color.r = Math.min(1, p.color.r * (0.85 + Math.random() * 0.3));
+      p.color.g = Math.min(1, p.color.g * (0.85 + Math.random() * 0.3));
 
       p.life = 0;
-      p.maxLife = lifespan * (0.7 + Math.random() * 0.6);
-      p.size = 2.0 + Math.random() * 3.5;
+      p.maxLife = lifespan * (0.6 + Math.random() * 0.8);
+      p.size = 0.08 + Math.random() * 0.14;
 
       spawned++;
     }
@@ -114,14 +139,24 @@ export class ParticleSystem {
     for (let i = 0; i < this.maxParticles; i++) {
       const p = this.particles[i];
       if (!p.active) {
-        this.sizes[i] = 0;
+        this.positions[i * 3] = 0;
+        this.positions[i * 3 + 1] = 0;
+        this.positions[i * 3 + 2] = 0;
+        this.colors[i * 3] = 0;
+        this.colors[i * 3 + 1] = 0;
+        this.colors[i * 3 + 2] = 0;
         continue;
       }
 
       p.life += delta;
       if (p.life >= p.maxLife) {
         p.active = false;
-        this.sizes[i] = 0;
+        this.positions[i * 3] = 0;
+        this.positions[i * 3 + 1] = 0;
+        this.positions[i * 3 + 2] = 0;
+        this.colors[i * 3] = 0;
+        this.colors[i * 3 + 1] = 0;
+        this.colors[i * 3 + 2] = 0;
         continue;
       }
 
@@ -130,17 +165,17 @@ export class ParticleSystem {
       // Gravity pull
       if (gravityTarget) {
         const pull = gravityTarget.clone().sub(p.position);
-        const distSq = Math.max(0.25, pull.lengthSq());
+        const distSq = Math.max(0.2, pull.lengthSq());
         pull.normalize();
-        p.velocity.addScaledVector(pull, (8.0 / distSq) * delta);
+        p.velocity.addScaledVector(pull, (10.0 / distSq) * delta);
       }
 
       // Physics integration
       p.position.addScaledVector(p.velocity, delta);
-      p.velocity.multiplyScalar(0.985); // Gentle drag
+      p.velocity.multiplyScalar(0.975); // Air/space resistance
 
       const lifeProgress = p.life / p.maxLife;
-      const fade = 1.0 - lifeProgress;
+      const fade = Math.max(0, 1.0 - lifeProgress);
 
       this.positions[i * 3] = p.position.x;
       this.positions[i * 3 + 1] = p.position.y;
@@ -149,27 +184,31 @@ export class ParticleSystem {
       this.colors[i * 3] = p.color.r * fade;
       this.colors[i * 3 + 1] = p.color.g * fade;
       this.colors[i * 3 + 2] = p.color.b * fade;
-
-      this.sizes[i] = p.size * (0.3 + 0.7 * fade);
     }
 
     if (hasActive) {
       this.geometry.attributes.position.needsUpdate = true;
       this.geometry.attributes.color.needsUpdate = true;
-      this.geometry.attributes.size.needsUpdate = true;
     }
   }
 
   public clear(): void {
     for (let i = 0; i < this.maxParticles; i++) {
       this.particles[i].active = false;
-      this.sizes[i] = 0;
+      this.positions[i * 3] = 0;
+      this.positions[i * 3 + 1] = 0;
+      this.positions[i * 3 + 2] = 0;
+      this.colors[i * 3] = 0;
+      this.colors[i * 3 + 1] = 0;
+      this.colors[i * 3 + 2] = 0;
     }
-    this.geometry.attributes.size.needsUpdate = true;
+    this.geometry.attributes.position.needsUpdate = true;
+    this.geometry.attributes.color.needsUpdate = true;
   }
 
   public dispose(): void {
     this.clear();
+    this.spriteTexture.dispose();
     disposeNode(this.group);
   }
 }
