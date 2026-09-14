@@ -9,6 +9,8 @@ interface ActivePlasma {
   targetPos: THREE.Vector3;
   targetNormal: THREE.Vector3;
   targetUV: { u: number; v: number };
+  targetLat: number;
+  targetLon: number;
   progress: number;
 }
 
@@ -52,6 +54,8 @@ export class PlasmaBeamWeapon extends Weapon {
       targetPos: target.point.clone(),
       targetNormal: target.normal.clone(),
       targetUV: { ...target.uv },
+      targetLat: target.lat,
+      targetLon: target.lon,
       progress: 0,
     });
   }
@@ -66,6 +70,8 @@ export class PlasmaBeamWeapon extends Weapon {
         context.planet.registerImpact({
           u: p.targetUV.u,
           v: p.targetUV.v,
+          lat: p.targetLat,
+          lon: p.targetLon,
           position: p.targetPos,
           radius: this.config.damageRadius,
           intensity: this.config.damageIntensity,

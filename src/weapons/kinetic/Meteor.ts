@@ -9,6 +9,8 @@ interface ActiveMeteor {
   targetPos: THREE.Vector3;
   targetNormal: THREE.Vector3;
   targetUV: { u: number; v: number };
+  targetLat: number;
+  targetLon: number;
   progress: number;
   speed: number;
 }
@@ -62,6 +64,8 @@ export class MeteorWeapon extends Weapon {
       targetPos: target.point.clone(),
       targetNormal: target.normal.clone(),
       targetUV: { ...target.uv },
+      targetLat: target.lat,
+      targetLon: target.lon,
       progress: 0,
       speed: 4.2, // Time to impact ~ 0.25s
     });
@@ -105,6 +109,8 @@ export class MeteorWeapon extends Weapon {
     context.planet.registerImpact({
       u: meteor.targetUV.u,
       v: meteor.targetUV.v,
+      lat: meteor.targetLat,
+      lon: meteor.targetLon,
       position: meteor.targetPos,
       radius: this.config.damageRadius,
       intensity: this.config.damageIntensity,

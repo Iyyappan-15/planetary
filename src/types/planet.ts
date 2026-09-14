@@ -63,11 +63,14 @@ export interface PlanetConfig {
   clouds?: CloudProfile;
   rings?: RingProfile;
   destruction: DestructionProfile;
+  initialPopulation: number;
 }
 
 export interface ImpactData {
   u: number;
   v: number;
+  lat?: number;
+  lon?: number;
   position: THREE.Vector3;
   radius: number; // in UV/world units
   intensity: number; // 0..1

@@ -76,6 +76,8 @@ export class GravityWellWeapon extends Weapon {
     context.planet.registerImpact({
       u: target.uv.u,
       v: target.uv.v,
+      lat: target.lat,
+      lon: target.lon,
       position: target.point,
       radius: this.config.damageRadius,
       intensity: this.config.damageIntensity,

@@ -26,6 +26,13 @@ export const App: React.FC = () => {
     percentage: 100,
     isBroken: false,
     impactCount: 0,
+    population: {
+      current: PLANET_PRESETS[0].initialPopulation,
+      initial: PLANET_PRESETS[0].initialPopulation,
+      casualties: 0,
+      lastCasualties: 0,
+      survivalRate: 100,
+    },
   });
   const [targetInfo, setTargetInfo] = useState<TargetInfo | null>(null);
 

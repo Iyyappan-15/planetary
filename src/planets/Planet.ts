@@ -7,6 +7,7 @@ import { Atmosphere } from './Atmosphere';
 import { CloudLayer } from './CloudLayer';
 import { DamageSystem } from './DamageSystem';
 import { FractureSystem } from './FractureSystem';
+import { PopulationSystem } from './PopulationSystem';
 import { disposeNode } from '../utils/disposal';
 
 export class Planet {
@@ -19,6 +20,7 @@ export class Planet {
 
   public damageSystem: DamageSystem;
   public fractureSystem: FractureSystem;
+  public populationSystem: PopulationSystem;
 
   private material: PlanetMaterial;
   private surfaceTexture: THREE.Texture;
@@ -32,10 +34,11 @@ export class Planet {
     this.config = config;
     this.group = new THREE.Group();
 
-    // 1. Initialize Damage and Fracture systems
+    // 1. Initialize Damage, Fracture, and Population systems
     this.damageSystem = new DamageSystem(1024, 512);
     this.fractureSystem = new FractureSystem(config.radius, config.destruction.coreColor);
     this.group.add(this.fractureSystem.group);
+    this.populationSystem = new PopulationSystem(config.id, config.initialPopulation);
 
     const isEarth = config.id === 'earth';
 
@@ -121,6 +124,7 @@ export class Planet {
 
   public registerImpact(impact: ImpactData): void {
     this.damageSystem.registerImpact(impact);
+    this.populationSystem.registerImpactCasualties(impact, false);
 
     if (this.atmosphere) {
       this.atmosphere.setDisturbance(impact.intensity * 0.8);
@@ -138,6 +142,7 @@ export class Planet {
     this.surfaceMesh.visible = false;
     if (this.clouds) this.clouds.setVisible(false);
     if (this.atmosphere) this.atmosphere.setVisible(false);
+    this.populationSystem.registerImpactCasualties({} as ImpactData, true);
     this.fractureSystem.triggerBreakup(epicenter);
   }
 
@@ -165,6 +170,7 @@ export class Planet {
       percentage,
       isBroken: this.isDestroyed,
       impactCount: this.damageSystem.impactCount,
+      population: this.populationSystem.getState(),
     };
   }
 
@@ -176,6 +182,7 @@ export class Planet {
 
     this.damageSystem.reset();
     this.fractureSystem.reset();
+    this.populationSystem.reset();
   }
 
   public setAtmosphereVisible(visible: boolean): void {

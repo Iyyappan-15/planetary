@@ -42,6 +42,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
       coreColor: '#ff4400',
       chunkCount: 20,
     },
+    initialPopulation: 8_045_311_447, // 8.045 Billion humans
   },
   {
     id: 'mars',
@@ -73,6 +74,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
       coreColor: '#ff5511',
       chunkCount: 18,
     },
+    initialPopulation: 145_000, // Colonial research outposts
   },
   {
     id: 'jupiter',
@@ -103,6 +105,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
       coreColor: '#ff2200',
       chunkCount: 24,
     },
+    initialPopulation: 0,
   },
   {
     id: 'saturn',
@@ -139,6 +142,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
       coreColor: '#ff3300',
       chunkCount: 22,
     },
+    initialPopulation: 0,
   },
 
   // ================= TIER 2: OTHER SOLAR SYSTEM =================
@@ -160,6 +164,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     },
     atmosphere: { enabled: false, color: '#888888', density: 0, glowIntensity: 0, rimPower: 1 },
     destruction: { resistance: 0.75, coreColor: '#ff4411', chunkCount: 16 },
+    initialPopulation: 0,
   },
   {
     id: 'venus',
@@ -168,7 +173,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     tagline: 'Runaway Greenhouse Inferno',
     description: 'Suffocated beneath opaque supercritical sulfuric acid clouds with furnace-like surface heat.',
     radius: 2.1,
-    rotationSpeed: -0.02, // Retrograde
+    rotationSpeed: -0.02,
     surface: {
       type: 'volcanic',
       primaryColor: '#d69e49',
@@ -180,6 +185,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     atmosphere: { enabled: true, color: '#ffcc66', density: 1.2, glowIntensity: 1.3, rimPower: 1.8 },
     clouds: { enabled: true, color: '#eedd99', opacity: 0.95, speed: 0.08, altitude: 0.025, seed: 77 },
     destruction: { resistance: 1.1, coreColor: '#ff6600', chunkCount: 20 },
+    initialPopulation: 0,
   },
   {
     id: 'uranus',
@@ -199,6 +205,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     },
     atmosphere: { enabled: true, color: '#8ae2ed', density: 0.8, glowIntensity: 0.9, rimPower: 2.1 },
     destruction: { resistance: 1.3, coreColor: '#44aaff', chunkCount: 20 },
+    initialPopulation: 0,
   },
   {
     id: 'neptune',
@@ -219,6 +226,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     },
     atmosphere: { enabled: true, color: '#4d82f3', density: 0.9, glowIntensity: 1.1, rimPower: 2.0 },
     destruction: { resistance: 1.4, coreColor: '#2277ff', chunkCount: 20 },
+    initialPopulation: 0,
   },
 
   // ================= TIER 3: FICTIONAL WORLDS =================
@@ -242,6 +250,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     atmosphere: { enabled: true, color: '#3ee0bb', density: 0.9, glowIntensity: 1.2, rimPower: 2.3 },
     clouds: { enabled: true, color: '#f0ffff', opacity: 0.85, speed: 0.07, altitude: 0.02, seed: 888 },
     destruction: { resistance: 1.2, coreColor: '#11ffaa', chunkCount: 22 },
+    initialPopulation: 4_620_000_000,
   },
   {
     id: 'ember',
@@ -262,6 +271,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     },
     atmosphere: { enabled: true, color: '#ff5522', density: 0.7, glowIntensity: 1.0, rimPower: 2.5 },
     destruction: { resistance: 0.9, coreColor: '#ff2200', chunkCount: 20 },
+    initialPopulation: 85_000,
   },
   {
     id: 'icefall',
@@ -281,6 +291,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     },
     atmosphere: { enabled: true, color: '#c7f1ff', density: 0.6, glowIntensity: 0.85, rimPower: 2.6 },
     destruction: { resistance: 0.95, coreColor: '#77ddff', chunkCount: 18 },
+    initialPopulation: 340_000,
   },
   {
     id: 'abyss',
@@ -302,6 +313,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     atmosphere: { enabled: true, color: '#2b78c9', density: 0.85, glowIntensity: 1.0, rimPower: 2.3 },
     clouds: { enabled: true, color: '#d0e5f5', opacity: 0.8, speed: 0.08, altitude: 0.02, seed: 405 },
     destruction: { resistance: 1.1, coreColor: '#00eeff', chunkCount: 22 },
+    initialPopulation: 1_250_000_000,
   },
   {
     id: 'verdant',
@@ -323,6 +335,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     atmosphere: { enabled: true, color: '#38e07b', density: 0.85, glowIntensity: 0.95, rimPower: 2.4 },
     clouds: { enabled: true, color: '#ffffff', opacity: 0.75, speed: 0.06, altitude: 0.018, seed: 712 },
     destruction: { resistance: 1.0, coreColor: '#77ff33', chunkCount: 20 },
+    initialPopulation: 3_100_000_000,
   },
   {
     id: 'inferna',
@@ -343,5 +356,6 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     },
     atmosphere: { enabled: true, color: '#ff3700', density: 0.95, glowIntensity: 1.25, rimPower: 2.2 },
     destruction: { resistance: 0.8, coreColor: '#ff1100', chunkCount: 24 },
+    initialPopulation: 22_000,
   },
 ];

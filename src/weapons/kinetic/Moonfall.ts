@@ -9,6 +9,8 @@ interface ActiveMoon {
   targetPos: THREE.Vector3;
   targetNormal: THREE.Vector3;
   targetUV: { u: number; v: number };
+  targetLat: number;
+  targetLon: number;
   progress: number;
 }
 
@@ -52,6 +54,8 @@ export class MoonfallWeapon extends Weapon {
       targetPos: target.point.clone(),
       targetNormal: target.normal.clone(),
       targetUV: { ...target.uv },
+      targetLat: target.lat,
+      targetLon: target.lon,
       progress: 0,
     });
   }
@@ -66,6 +70,8 @@ export class MoonfallWeapon extends Weapon {
         context.planet.registerImpact({
           u: m.targetUV.u,
           v: m.targetUV.v,
+          lat: m.targetLat,
+          lon: m.targetLon,
           position: m.targetPos,
           radius: this.config.damageRadius,
           intensity: this.config.damageIntensity,

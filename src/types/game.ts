@@ -24,10 +24,19 @@ export interface GameSettings {
   cameraSensitivity: number;
 }
 
+export interface PopulationState {
+  current: number;
+  initial: number;
+  casualties: number;
+  lastCasualties: number;
+  survivalRate: number; // 0..100
+}
+
 export interface PlanetIntegrity {
   currentHp: number;
   maxHp: number;
   percentage: number;
   isBroken: boolean;
   impactCount: number;
+  population: PopulationState;
 }
