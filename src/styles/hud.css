@@ -1,0 +1,629 @@
+/* =========================================================================
+   PLANETARY - Sci-Fi Minimalist HUD Stylesheet
+   ========================================================================= */
+
+:root {
+  --hud-bg-glass: rgba(10, 14, 24, 0.72);
+  --hud-bg-glass-card: rgba(16, 22, 38, 0.85);
+  --hud-border: rgba(255, 255, 255, 0.12);
+  --hud-border-cyan: rgba(0, 255, 204, 0.35);
+  --hud-cyan: #00ffcc;
+  --hud-cyan-glow: rgba(0, 255, 204, 0.4);
+  --hud-orange: #ff6622;
+  --hud-danger: #ff3344;
+  --hud-text-main: #f0f4f8;
+  --hud-text-dim: #8a99ad;
+  --font-mono: 'Consolas', 'Courier New', monospace;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body, html, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #03060c;
+  color: var(--hud-text-main);
+  font-family: var(--font-sans);
+}
+
+.planetary-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.webgl-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+  cursor: crosshair;
+}
+
+/* ================= TOP HEADER HUD ================= */
+
+.hud-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.hud-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.brand-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+}
+
+.brand-badge {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  background: rgba(0, 255, 204, 0.15);
+  color: var(--hud-cyan);
+  border: 1px solid var(--hud-cyan-glow);
+  padding: 2px 6px;
+  border-radius: 3px;
+  letter-spacing: 1px;
+}
+
+/* Planet Status Center */
+.hud-planet-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--hud-bg-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--hud-border);
+  border-radius: 8px;
+  padding: 8px 20px;
+  pointer-events: auto;
+}
+
+.planet-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.planet-name {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.integrity-bar-wrap {
+  width: 160px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.integrity-bar-fill {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.integrity-text {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--hud-text-dim);
+}
+
+.hud-actions {
+  display: flex;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+/* Common Sci-Fi Buttons */
+.hud-btn {
+  background: var(--hud-bg-glass);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--hud-border);
+  color: var(--hud-text-main);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hud-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.hud-btn.btn-cyan {
+  border-color: var(--hud-cyan-glow);
+  color: var(--hud-cyan);
+}
+
+.hud-btn.btn-cyan:hover {
+  background: rgba(0, 255, 204, 0.15);
+  box-shadow: 0 0 12px var(--hud-cyan-glow);
+}
+
+.hud-btn.btn-danger {
+  border-color: rgba(255, 68, 68, 0.4);
+  color: #ff5555;
+}
+
+.hud-btn.btn-danger:hover {
+  background: rgba(255, 68, 68, 0.15);
+  box-shadow: 0 0 12px rgba(255, 68, 68, 0.4);
+}
+
+/* ================= WEAPON TOOLBAR ================= */
+
+.weapon-toolbar {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--hud-bg-glass);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--hud-border);
+  border-radius: 12px;
+  padding: 10px;
+  z-index: 10;
+}
+
+.weapon-category-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 6px;
+}
+
+.category-tab {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  color: var(--hud-text-dim);
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.category-tab.active {
+  background: rgba(0, 255, 204, 0.15);
+  color: var(--hud-cyan);
+}
+
+.weapon-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.weapon-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 210px;
+}
+
+.weapon-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.weapon-card.active {
+  background: rgba(0, 255, 204, 0.12);
+  border-color: var(--hud-cyan);
+  box-shadow: 0 0 10px rgba(0, 255, 204, 0.25);
+}
+
+.weapon-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.weapon-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--hud-cyan);
+}
+
+.weapon-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--hud-text-main);
+}
+
+.weapon-shortcut {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--hud-text-dim);
+}
+
+/* ================= TARGET COORDINATES HUD ================= */
+
+.hud-target-info {
+  position: absolute;
+  right: 24px;
+  top: 80px;
+  background: var(--hud-bg-glass);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--hud-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.target-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.target-label {
+  color: var(--hud-text-dim);
+}
+
+.target-val {
+  color: var(--hud-cyan);
+}
+
+/* ================= BOTTOM CHEATSHEET ================= */
+
+.hud-bottom {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  background: var(--hud-bg-glass);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--hud-border);
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 11px;
+  color: var(--hud-text-dim);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.control-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.control-key {
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+/* ================= MODAL OVERLAYS ================= */
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(4, 7, 14, 0.82);
+  backdrop-filter: blur(16px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.modal-card {
+  background: var(--hud-bg-glass-card);
+  border: 1px solid var(--hud-border);
+  border-radius: 14px;
+  width: 90%;
+  max-width: 820px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--hud-text-dim);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.modal-close:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Planet Grid in Modal */
+.planet-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.planet-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planet-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.planet-card.active {
+  border-color: var(--hud-cyan);
+  background: rgba(0, 255, 204, 0.08);
+}
+
+.planet-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.planet-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.planet-card-tag {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--hud-text-dim);
+  text-transform: uppercase;
+}
+
+.planet-card-desc {
+  font-size: 12px;
+  color: var(--hud-text-dim);
+  line-height: 1.4;
+}
+
+/* Settings Controls in Modal */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.settings-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--hud-cyan);
+}
+
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.settings-label {
+  font-size: 13px;
+  color: var(--hud-text-main);
+}
+
+.segmented-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.segmented-btn {
+  background: transparent;
+  border: none;
+  color: var(--hud-text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.segmented-btn.active {
+  background: var(--hud-cyan);
+  color: #03060c;
+}
+
+/* Slider */
+.slider-input {
+  width: 140px;
+  accent-color: var(--hud-cyan);
+}
+
+/* Toggle Switch */
+.toggle-btn {
+  width: 42px;
+  height: 22px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 11px;
+  position: relative;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s ease;
+}
+
+.toggle-btn.active {
+  background: var(--hud-cyan);
+}
+
+.toggle-knob {
+  width: 16px;
+  height: 16px;
+  background: #ffffff;
+  border-radius: 50%;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: transform 0.2s ease;
+}
+
+.toggle-btn.active .toggle-knob {
+  transform: translateX(20px);
+}
+
+/* ================= LANDING OVERLAY ================= */
+
+.landing-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, rgba(12, 18, 32, 0.85) 0%, rgba(3, 6, 12, 0.98) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+  padding: 24px;
+  text-align: center;
+}
+
+.landing-title {
+  font-size: 48px;
+  font-weight: 900;
+  letter-spacing: 8px;
+  color: #ffffff;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  text-shadow: 0 0 30px rgba(0, 255, 204, 0.4);
+}
+
+.landing-tagline {
+  font-size: 18px;
+  color: var(--hud-text-dim);
+  margin-bottom: 32px;
+  letter-spacing: 1px;
+}
+
+.btn-enter-simulation {
+  background: rgba(0, 255, 204, 0.15);
+  border: 1px solid var(--hud-cyan);
+  color: var(--hud-cyan);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 14px 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+  transition: all 0.25s ease;
+}
+
+.btn-enter-simulation:hover {
+  background: var(--hud-cyan);
+  color: #03060c;
+  box-shadow: 0 0 30px rgba(0, 255, 204, 0.6);
+  transform: scale(1.03);
+}
