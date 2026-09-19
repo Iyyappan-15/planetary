@@ -88,18 +88,6 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
           normal = normalize(tangent * nTex.x * 0.6 + bitangent * nTex.y * 0.6 + normal * nTex.z);
         }
 
-        // 3D Crater Rim Normal Displacement: gives authentic depth, rim lip and shadow to craters
-        if (damage.r > 0.02) {
-          vec2 dUv = vec2(0.0025, 0.005);
-          float dX = texture2D(tDamage, vUv + vec2(dUv.x, 0.0)).r - texture2D(tDamage, vUv - vec2(dUv.x, 0.0)).r;
-          float dY = texture2D(tDamage, vUv + vec2(0.0, dUv.y)).r - texture2D(tDamage, vUv - vec2(0.0, dUv.y)).r;
-          vec3 upVec = vec3(0.0, 1.0, 0.0);
-          vec3 tangent = normalize(cross(upVec, normal));
-          if (length(tangent) < 0.01) tangent = vec3(1.0, 0.0, 0.0);
-          vec3 bitangent = cross(normal, tangent);
-          normal = normalize(normal - (tangent * dX + bitangent * dY) * 3.8);
-        }
-
         // Lighting calculation (day / night terminator)
         float NdotL = dot(normal, sunDir);
         float dayFactor = smoothstep(-0.15, 0.22, NdotL);
@@ -108,7 +96,7 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
         // Diffuse lighting with realistic day-to-night falloff
         vec3 diffuse = scorchedColor * (0.08 + 0.96 * dayFactor);
 
-        // Specular ocean glint: sharp, realistic sun reflection on water (suppressed where cratered)
+        // Specular ocean glint: sharp, realistic sun reflection on water (suppressed on scorched crater)
         if (uHasOcean > 0.5) {
           float specMask = texture2D(tSpecular, vUv).r * (1.0 - scorchFactor);
           if (specMask > 0.35) {
@@ -132,13 +120,11 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
           diffuse += nightLights * lightMask * 2.2;
         }
 
-        // Molten Mantle Glow (incandescent core, glowing fissure veins & magma)
-        float heat = clamp(damage.b * 1.8, 0.0, 1.0);
-        if (heat > 0.015) {
-          vec3 magmaOrange = vec3(1.0, 0.35, 0.05);
-          vec3 whiteHot = vec3(1.0, 0.96, 0.85);
-          vec3 fireColor = mix(magmaOrange, whiteHot, pow(heat, 2.2));
-          diffuse += fireColor * heat * 4.0;
+        // Realistic subtle warm ember glow inside crater center (clean & natural, no blinding glare)
+        float heat = clamp(damage.b, 0.0, 1.0);
+        if (heat > 0.1) {
+          vec3 magmaOrange = vec3(1.0, 0.38, 0.08);
+          diffuse += magmaOrange * heat * 1.2;
         }
 
         gl_FragColor = vec4(diffuse, 1.0);
