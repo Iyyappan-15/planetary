@@ -108,7 +108,7 @@ export class WeaponManager {
       // Compute UV in local planet space (accounting for planet rotation)
       const localPoint = point.clone();
       context.planet.surfaceMesh.worldToLocal(localPoint);
-      const uv = vector3ToUV(localPoint);
+      const uv = hit.uv ? { u: hit.uv.x, v: hit.uv.y } : vector3ToUV(localPoint);
       const { lat, lon } = vector3ToLatLon(localPoint);
 
       this.currentTarget = {
