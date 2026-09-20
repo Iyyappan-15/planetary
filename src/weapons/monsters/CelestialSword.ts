@@ -2,23 +2,29 @@ import * as THREE from 'three';
 import { Weapon, WeaponContext } from '../Weapon';
 import { TargetInfo } from '../../types/weapon';
 import { disposeNode } from '../../utils/disposal';
+import { vector3ToUV, vector3ToLatLon } from '../../utils/math';
 
 interface ActiveSword {
   group: THREE.Group;
-  mandalaGroup: THREE.Group;
-  lightBeam: THREE.Mesh;
-  bladeMesh: THREE.Mesh;
+  portalGroup: THREE.Group;
   bladeAura: THREE.Mesh;
-  fullerMesh: THREE.Mesh;
-  startPos: THREE.Vector3;
-  targetPos: THREE.Vector3;
-  targetNormal: THREE.Vector3;
-  targetUV: { u: number; v: number };
-  targetLat: number;
-  targetLon: number;
-  // Phase management
-  phase: 'summoning' | 'plunging' | 'impaled' | 'ascending';
-  phaseTimer: number;
+  flightDir: THREE.Vector3; // Direction from entry through center to exit
+  entryPos: THREE.Vector3;
+  entryNormal: THREE.Vector3;
+  entryUV: { u: number; v: number };
+  entryLat: number;
+  entryLon: number;
+  exitPos: THREE.Vector3;
+  exitNormal: THREE.Vector3;
+  exitUV: { u: number; v: number };
+  exitLat: number;
+  exitLon: number;
+  planetRadius: number;
+  // Flight state
+  timer: number;
+  totalDuration: number;
+  hasHitEntry: boolean;
+  hasHitExit: boolean;
   pulseTimer: number;
 }
 
@@ -30,113 +36,91 @@ export class CelestialSwordWeapon extends Weapon {
       id: 'celestial_sword',
       name: 'Celestial Sword',
       category: 'monsters',
-      description: 'Summons an ancient divine blade from a celestial constellation portal in deep space to pierce the planetary mantle and shatter the tectonic plates.',
+      description: 'Summons a colossal divine blade from deep space that plunges through the planetary crust, impales the core, and bursts out through the opposite hemisphere before ascending into starlight.',
       cooldownMs: 2500,
       iconName: 'Sword',
-      damageRadius: 0.22,
-      damageIntensity: 2.2,
+      damageRadius: 0.24,
+      damageIntensity: 2.4,
     });
   }
 
   /**
-   * Constructs the rotating celestial summoning mandala in orbit.
+   * Constructs the ethereal summoning portal in deep space where the sword originates.
    */
-  private createMandalaMesh(): THREE.Group {
+  private createPortalMesh(): THREE.Group {
     const group = new THREE.Group();
 
-    // Outer golden runic torus
     const goldMat = new THREE.MeshBasicMaterial({
       color: 0xffd700,
-      wireframe: false,
+      transparent: true,
+      opacity: 0.8,
+    });
+    const cyanMat = new THREE.MeshBasicMaterial({
+      color: 0x00f0ff,
       transparent: true,
       opacity: 0.85,
     });
-    const outerRingGeo = new THREE.TorusGeometry(2.6, 0.05, 12, 64);
-    const outerRing = new THREE.Mesh(outerRingGeo, goldMat);
+
+    // Outer runic ring
+    const outerRing = new THREE.Mesh(new THREE.TorusGeometry(3.0, 0.05, 12, 48), goldMat);
     group.add(outerRing);
 
-    // Secondary concentric cyan ring
-    const cyanMat = new THREE.MeshBasicMaterial({
-      color: 0x00ffff,
-      transparent: true,
-      opacity: 0.9,
-    });
-    const innerRingGeo = new THREE.TorusGeometry(1.8, 0.03, 12, 48);
-    const innerRing = new THREE.Mesh(innerRingGeo, cyanMat);
+    // Inner starlight ring
+    const innerRing = new THREE.Mesh(new THREE.TorusGeometry(2.0, 0.04, 12, 36), cyanMat);
     group.add(innerRing);
 
-    // Third fine starlight ring
-    const starRingGeo = new THREE.TorusGeometry(1.1, 0.02, 12, 32);
-    const starRing = new THREE.Mesh(starRingGeo, cyanMat);
-    group.add(starRing);
-
-    // Cross starburst beams
-    const spokeMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.75,
-    });
-    const spokeGeo1 = new THREE.CylinderGeometry(0.025, 0.025, 5.4, 8);
-    const spoke1 = new THREE.Mesh(spokeGeo1, spokeMat);
+    // Starburst cross spokes
+    const spokeMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 });
+    const spoke1 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 6.2, 8), spokeMat);
     group.add(spoke1);
 
-    const spokeGeo2 = new THREE.CylinderGeometry(0.025, 0.025, 5.4, 8);
-    const spoke2 = new THREE.Mesh(spokeGeo2, spokeMat);
+    const spoke2 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 6.2, 8), spokeMat);
     spoke2.rotation.z = Math.PI / 2;
     group.add(spoke2);
-
-    // Diagonal glyph spokes
-    const spokeGeo3 = new THREE.CylinderGeometry(0.015, 0.015, 4.0, 8);
-    const spoke3 = new THREE.Mesh(spokeGeo3, goldMat);
-    spoke3.rotation.z = Math.PI / 4;
-    group.add(spoke3);
-
-    const spokeGeo4 = new THREE.CylinderGeometry(0.015, 0.015, 4.0, 8);
-    const spoke4 = new THREE.Mesh(spokeGeo4, goldMat);
-    spoke4.rotation.z = -Math.PI / 4;
-    group.add(spoke4);
 
     return group;
   }
 
   /**
-   * Constructs the colossal divine greatsword mesh.
+   * Constructs the colossal divine greatsword model.
+   * Forward axis is +Z:
+   *   - Tip is at z = +6.2
+   *   - Blade extends from z = 0 to z = +6.2
+   *   - Crossguard is at z = 0
+   *   - Hilt extends from z = 0 to z = -1.8
+   *   - Pommel crystal is at z = -2.0
+   * Total length = 8.2 units!
    */
-  private createSwordMesh(): {
-    group: THREE.Group;
-    bladeMesh: THREE.Mesh;
-    bladeAura: THREE.Mesh;
-    fullerMesh: THREE.Mesh;
-  } {
+  private createSwordMesh(): { group: THREE.Group; bladeAura: THREE.Mesh } {
     const group = new THREE.Group();
 
     // 1. Blade Core Material (Radiant Celestial Steel)
     const bladeMat = new THREE.MeshStandardMaterial({
       color: 0xf0f8ff,
-      emissive: 0x55ccff,
-      emissiveIntensity: 0.9,
+      emissive: 0x44bbff,
+      emissiveIntensity: 0.95,
       roughness: 0.08,
       metalness: 0.95,
     });
 
-    // 2. Gold Ornamentation Material
     const goldMat = new THREE.MeshStandardMaterial({
       color: 0xffaa00,
       emissive: 0xff6600,
-      emissiveIntensity: 0.6,
+      emissiveIntensity: 0.7,
       roughness: 0.2,
       metalness: 0.85,
     });
 
-    // 3. Blade Diamond Cross-Section (length 6.2)
-    const bladeGeo = new THREE.CylinderGeometry(0.05, 0.32, 6.2, 4);
+    // 2. Double-Edged Faceted Diamond Blade
+    // Cylinder geometry aligned along Z axis (rotation.x = PI/2)
+    const bladeGeo = new THREE.CylinderGeometry(0.06, 0.35, 6.2, 4);
     const bladeMesh = new THREE.Mesh(bladeGeo, bladeMat);
     bladeMesh.scale.set(0.35, 1, 1);
     bladeMesh.position.set(0, 0, 3.1);
     bladeMesh.rotation.x = Math.PI / 2;
     group.add(bladeMesh);
 
-    // Ethereal Outer Aura Envelope
+    // Glowing Ethereal Outer Aura Envelope
     const auraMat = new THREE.MeshBasicMaterial({
       color: 0x00f0ff,
       transparent: true,
@@ -144,48 +128,46 @@ export class CelestialSwordWeapon extends Weapon {
       blending: THREE.AdditiveBlending,
       side: THREE.DoubleSide,
     });
-    const auraGeo = new THREE.CylinderGeometry(0.08, 0.4, 6.4, 4);
+    const auraGeo = new THREE.CylinderGeometry(0.09, 0.42, 6.4, 4);
     const bladeAura = new THREE.Mesh(auraGeo, auraMat);
     bladeAura.scale.set(0.42, 1, 1.08);
     bladeAura.position.set(0, 0, 3.1);
     bladeAura.rotation.x = Math.PI / 2;
     group.add(bladeAura);
 
-    // Glowing Central Fuller Channel
-    const fullerGeo = new THREE.BoxGeometry(0.03, 0.06, 5.6);
-    const fullerMat = new THREE.MeshBasicMaterial({
-      color: 0x88ffff,
-    });
+    // Central Glowing Fuller Spine
+    const fullerGeo = new THREE.BoxGeometry(0.04, 0.08, 5.8);
+    const fullerMat = new THREE.MeshBasicMaterial({ color: 0x99ffff });
     const fullerMesh = new THREE.Mesh(fullerGeo, fullerMat);
-    fullerMesh.position.set(0, 0, 2.8);
+    fullerMesh.position.set(0, 0, 2.9);
     group.add(fullerMesh);
 
-    // 4. Angelic Wing Crossguard
-    const guardCentralGeo = new THREE.BoxGeometry(0.7, 0.3, 0.35);
+    // 3. Ornate Winged Angelic Crossguard
+    const guardCentralGeo = new THREE.BoxGeometry(0.8, 0.35, 0.4);
     const guardCentral = new THREE.Mesh(guardCentralGeo, goldMat);
     guardCentral.position.set(0, 0, 0);
     group.add(guardCentral);
 
-    // Left & Right Swept Wings
-    const wingGeo = new THREE.CylinderGeometry(0.04, 0.2, 1.2, 5);
+    // Swept Guard Wings
+    const wingGeo = new THREE.CylinderGeometry(0.05, 0.22, 1.3, 5);
     const leftWing = new THREE.Mesh(wingGeo, goldMat);
-    leftWing.position.set(-0.85, 0, 0.15);
+    leftWing.position.set(-0.95, 0, 0.15);
     leftWing.rotation.z = Math.PI / 3;
     leftWing.rotation.x = Math.PI / 2;
     group.add(leftWing);
 
     const rightWing = new THREE.Mesh(wingGeo, goldMat);
-    rightWing.position.set(0.85, 0, 0.15);
+    rightWing.position.set(0.95, 0, 0.15);
     rightWing.rotation.z = -Math.PI / 3;
     rightWing.rotation.x = Math.PI / 2;
     group.add(rightWing);
 
-    // Central Core Crest Sapphire Gem
-    const gemGeo = new THREE.OctahedronGeometry(0.22);
+    // Guard Center Sapphire Gem
+    const gemGeo = new THREE.OctahedronGeometry(0.24);
     const gemMat = new THREE.MeshStandardMaterial({
       color: 0x00ffff,
       emissive: 0x0088ff,
-      emissiveIntensity: 1.2,
+      emissiveIntensity: 1.3,
       roughness: 0.1,
       metalness: 0.5,
     });
@@ -193,102 +175,102 @@ export class CelestialSwordWeapon extends Weapon {
     gem.position.set(0, 0, 0);
     group.add(gem);
 
-    // 5. Long Sacred Grip / Hilt
-    const gripGeo = new THREE.CylinderGeometry(0.09, 0.09, 1.4, 16);
+    // 4. Sacred Hilt Grip
+    const gripGeo = new THREE.CylinderGeometry(0.09, 0.09, 1.8, 16);
     const gripMat = new THREE.MeshStandardMaterial({
       color: 0x111122,
       roughness: 0.4,
       metalness: 0.6,
     });
     const grip = new THREE.Mesh(gripGeo, gripMat);
-    grip.position.set(0, 0, -0.7);
+    grip.position.set(0, 0, -0.9);
     grip.rotation.x = Math.PI / 2;
     group.add(grip);
 
     // Golden Rings on Grip
     for (let r = 0; r < 4; r++) {
-      const ringGeo = new THREE.TorusGeometry(0.105, 0.02, 8, 16);
+      const ringGeo = new THREE.TorusGeometry(0.11, 0.02, 8, 16);
       const ring = new THREE.Mesh(ringGeo, goldMat);
-      ring.position.set(0, 0, -0.35 - r * 0.25);
+      ring.position.set(0, 0, -0.4 - r * 0.35);
       group.add(ring);
     }
 
-    // 6. Radiant Multifaceted Pommel Crystal
-    const pommelGeo = new THREE.DodecahedronGeometry(0.26);
+    // 5. Starlight Pommel Crystal
+    const pommelGeo = new THREE.DodecahedronGeometry(0.28);
     const pommel = new THREE.Mesh(pommelGeo, goldMat);
-    pommel.position.set(0, 0, -1.5);
+    pommel.position.set(0, 0, -1.9);
     group.add(pommel);
 
-    const pommelCoreGeo = new THREE.OctahedronGeometry(0.15);
+    const pommelCoreGeo = new THREE.OctahedronGeometry(0.17);
     const pommelCore = new THREE.Mesh(pommelCoreGeo, gemMat);
-    pommelCore.position.set(0, 0, -1.5);
+    pommelCore.position.set(0, 0, -1.9);
     group.add(pommelCore);
 
-    return { group, bladeMesh, bladeAura, fullerMesh };
-  }
-
-  /**
-   * Creates the vertical beam of divine starlight targeting the impact zone.
-   */
-  private createLightBeam(): THREE.Mesh {
-    const beamGeo = new THREE.CylinderGeometry(0.12, 0.5, 16, 16, 1, true);
-    const beamMat = new THREE.MeshBasicMaterial({
-      color: 0x00f0ff,
-      transparent: true,
-      opacity: 0.35,
-      blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide,
-    });
-    const beam = new THREE.Mesh(beamGeo, beamMat);
-    beam.rotation.x = Math.PI / 2;
-    return beam;
+    return { group, bladeAura };
   }
 
   public execute(target: TargetInfo, context: WeaponContext): void {
     if (!this.canFire()) return;
     this.lastFiredTime = performance.now();
 
-    // Spawn high in orbit ~15.0 units out along normal
-    const startPos = target.point.clone().addScaledVector(target.normal, 14.5);
+    const planetRadius = context.planet.config.radius;
+    const entryPos = target.point.clone();
+    const entryNormal = target.normal ? target.normal.clone() : entryPos.clone().normalize();
 
-    // 1. Mandala
-    const mandalaGroup = this.createMandalaMesh();
-    mandalaGroup.position.copy(startPos);
-    mandalaGroup.lookAt(target.point);
-    mandalaGroup.scale.set(0.01, 0.01, 0.01);
-    context.scene.add(mandalaGroup);
+    // Flight direction points straight into the planet through the center towards the antipode
+    const flightDir = entryNormal.clone().negate().normalize();
 
-    // 2. Light Beam
-    const lightBeam = this.createLightBeam();
-    const midPoint = target.point.clone().addScaledVector(target.normal, 7.25);
-    lightBeam.position.copy(midPoint);
-    lightBeam.lookAt(target.point);
-    lightBeam.scale.set(0.01, 1, 0.01);
-    context.scene.add(lightBeam);
+    // Antipodal Exit coordinates on the opposite side of the planet
+    const exitPos = entryPos.clone().negate();
+    const exitNormal = entryNormal.clone().negate();
 
-    // 3. Sword Mesh
-    const { group, bladeMesh, bladeAura, fullerMesh } = this.createSwordMesh();
-    group.position.copy(startPos);
-    group.lookAt(target.point);
-    // Initially sword is submerged halfway inside the portal
-    group.scale.set(0.01, 0.01, 0.01);
+    // Compute exact UV and lat/lon on the opposite side
+    const exitLocal = exitPos.clone();
+    context.planet.surfaceMesh.worldToLocal(exitLocal);
+    const exitUV = vector3ToUV(exitLocal);
+    const { lat: exitLat, lon: exitLon } = vector3ToLatLon(exitLocal);
+
+    // Initial sword position far out in deep space along entry axis
+    const spawnDist = planetRadius + 18.0;
+    const portalPos = entryPos.clone().addScaledVector(entryNormal, 18.0);
+
+    // Create portal at spawn location
+    const portalGroup = this.createPortalMesh();
+    portalGroup.position.copy(portalPos);
+    portalGroup.lookAt(entryPos);
+    context.scene.add(portalGroup);
+
+    // Create the sword
+    const { group, bladeAura } = this.createSwordMesh();
+    // Align sword so that its local +Z (pointing toward tip) faces flightDir
+    group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), flightDir);
+
+    // Place sword initially so its tip is at the portal
+    // Since tip is at +6.2 along local Z, group origin is 6.2 units behind tip
+    const initialGroupPos = portalPos.clone().addScaledVector(flightDir, -6.2);
+    group.position.copy(initialGroupPos);
     context.scene.add(group);
 
     this.activeSwords.push({
       group,
-      mandalaGroup,
-      lightBeam,
-      bladeMesh,
+      portalGroup,
       bladeAura,
-      fullerMesh,
-      startPos,
-      targetPos: target.point.clone(),
-      targetNormal: target.normal.clone(),
-      targetUV: { ...target.uv },
-      targetLat: target.lat,
-      targetLon: target.lon,
-      phase: 'summoning',
-      phaseTimer: 0,
+      flightDir,
+      entryPos,
+      entryNormal,
+      entryUV: { ...target.uv },
+      entryLat: target.lat,
+      entryLon: target.lon,
+      exitPos,
+      exitNormal,
+      exitUV,
+      exitLat,
+      exitLon,
+      planetRadius,
+      timer: 0,
+      totalDuration: 3.4,
+      hasHitEntry: false,
+      hasHitExit: false,
       pulseTimer: 0,
     });
 
@@ -298,247 +280,247 @@ export class CelestialSwordWeapon extends Weapon {
   public update(delta: number, context: WeaponContext): void {
     for (let i = this.activeSwords.length - 1; i >= 0; i--) {
       const s = this.activeSwords[i];
-      s.phaseTimer += delta;
+      s.timer += delta;
+      const progress = Math.min(1.0, s.timer / s.totalDuration);
 
-      // Mandala orbital spin
-      if (s.mandalaGroup) {
-        s.mandalaGroup.rotation.z += delta * 2.2;
+      // Rotate portal in space
+      if (s.portalGroup) {
+        s.portalGroup.rotation.z += delta * 2.5;
       }
 
-      // ==========================================
-      // PHASE 1: SUMMONING (Portal opens, blade manifests)
-      // ==========================================
-      if (s.phase === 'summoning') {
-        const summonT = Math.min(1.0, s.phaseTimer / 0.9);
-        const easeOut = Math.sin((summonT * Math.PI) / 2);
+      // Vibrate aura
+      const vibe = Math.sin(s.timer * 35.0) * 0.02;
+      s.bladeAura.scale.x = 0.42 + vibe * 2.0;
+      s.bladeAura.scale.z = 1.08 + vibe * 2.0;
 
-        // Expand mandala
-        s.mandalaGroup.scale.set(easeOut, easeOut, easeOut);
+      // -------------------------------------------------------------
+      // TRAJECTORY: Tip moves from (-R - 18.0) to (+R + 18.0) along flightDir
+      // Where 0 is the center of the planet.
+      // -R is the entry surface!
+      // +R is the exit surface!
+      // -------------------------------------------------------------
+      const R = s.planetRadius;
+      const startTipDist = -R - 18.0;
+      const endTipDist = R + 18.0;
 
-        // Expand targeting light beam
-        s.lightBeam.scale.set(easeOut * 1.2, 1, easeOut * 1.2);
+      // Smooth majestic motion: rapid plunge with smooth acceleration
+      // Cubic easing for realistic gravitational acceleration
+      const easeT = progress < 0.5 
+        ? 2 * progress * progress 
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
 
-        // Sword emerges out of portal
-        s.group.scale.set(easeOut, easeOut, easeOut);
+      const currentTipDist = startTipDist + (endTipDist - startTipDist) * easeT;
 
-        // Holy starlight particles swirling around the portal
-        if (Math.random() < 0.65) {
+      // Group position is 6.2 units behind the tip
+      const currentGroupDist = currentTipDist - 6.2;
+      s.group.position.copy(s.flightDir).multiplyScalar(currentGroupDist);
+
+      // Tip world position
+      const tipPos = s.group.position.clone().addScaledVector(s.flightDir, 6.2);
+      // Pommel world position
+      const pommelPos = s.group.position.clone().addScaledVector(s.flightDir, -2.0);
+
+      // Trailing stardust wake behind the sword
+      context.particleSystem.emit(
+        pommelPos,
+        s.flightDir.clone().negate(),
+        4,
+        '#00f0ff',
+        0.8,
+        2.5,
+        0.4,
+        0.2
+      );
+
+      // -------------------------------------------------------------
+      // EVENT 1: TIP PIERCES ENTRY SURFACE (currentTipDist >= -R)
+      // -------------------------------------------------------------
+      if (!s.hasHitEntry && currentTipDist >= -R) {
+        s.hasHitEntry = true;
+        this.triggerEntryImpact(s, context);
+      }
+
+      // -------------------------------------------------------------
+      // WHILE SWORD IS PASSING THROUGH PLANET (Between Entry & Exit)
+      // -------------------------------------------------------------
+      if (s.hasHitEntry && currentGroupDist < R) {
+        // Continuous lava & holy plasma eruption from entry crater
+        if (Math.random() < 0.5) {
           context.particleSystem.emit(
-            s.startPos,
-            s.targetNormal,
+            s.entryPos,
+            s.entryNormal,
+            3,
+            '#ff6600',
+            1.2,
+            3.2,
+            0.5,
+            0.3
+          );
+          context.particleSystem.emit(
+            s.entryPos,
+            s.entryNormal,
             3,
             '#00ffff',
-            1.2,
-            3.0,
-            0.6,
-            0.4
+            1.0,
+            2.8,
+            0.4,
+            0.2
           );
         }
 
-        if (summonT >= 1.0) {
-          s.phase = 'plunging';
-          s.phaseTimer = 0;
-        }
-      }
-
-      // ==========================================
-      // PHASE 2: PLUNGING (Extreme acceleration plunge)
-      // ==========================================
-      else if (s.phase === 'plunging') {
-        // High-velocity plunge in 0.65 seconds
-        const plungeT = Math.min(1.0, s.phaseTimer / 0.65);
-        // Exponential gravity dive
-        const diveEase = Math.pow(plungeT, 3.2);
-
-        s.group.position.lerpVectors(s.startPos, s.targetPos, diveEase);
-
-        // Trailing sonic stardust ribbons
-        context.particleSystem.emit(
-          s.group.position,
-          s.targetNormal,
-          6,
-          '#ffffff',
-          0.8,
-          2.5,
-          0.4,
-          0.2
-        );
-        context.particleSystem.emit(
-          s.group.position,
-          s.targetNormal,
-          4,
-          '#00ffff',
-          0.6,
-          2.0,
-          0.3,
-          0.2
-        );
-
-        if (plungeT >= 1.0) {
-          s.phase = 'impaled';
-          s.phaseTimer = 0;
-          // Sink blade 2.1 units deep into crust and mantle
-          s.group.position.copy(s.targetPos).addScaledVector(s.targetNormal, -2.1);
-          this.triggerImpactCataclysm(s, context);
-        }
-      }
-
-      // ==========================================
-      // PHASE 3: IMPALED (Core detonation & tectonic pulse)
-      // ==========================================
-      else if (s.phase === 'impaled') {
+        // Tectonic pulse while cutting through mantle
         s.pulseTimer += delta;
+        if (s.pulseTimer >= 0.25) {
+          s.pulseTimer = 0;
+          context.cameraController.addTrauma(0.18);
+        }
+      }
 
-        // Vibrating divine blade resonance
-        const vibe = Math.sin(s.phaseTimer * 30.0) * 0.02;
-        s.bladeAura.scale.x = 0.42 + vibe * 2.0;
-        s.bladeAura.scale.z = 1.08 + vibe * 2.0;
+      // -------------------------------------------------------------
+      // EVENT 2: TIP BREAKS OUT OF OPPOSITE SIDE (currentTipDist >= +R)
+      // -------------------------------------------------------------
+      if (!s.hasHitExit && currentTipDist >= R) {
+        s.hasHitExit = true;
+        this.triggerExitImpact(s, context);
+      }
 
-        // Continuous planetary geyser of holy plasma and molten crust
-        if (Math.random() < 0.45) {
+      // While sword is emerging from exit side
+      if (s.hasHitExit && progress < 0.85) {
+        // Magma plume spraying out of the exit blowout
+        if (Math.random() < 0.6) {
           context.particleSystem.emit(
-            s.targetPos,
-            s.targetNormal,
+            s.exitPos,
+            s.exitNormal,
             4,
             '#00ffff',
             1.5,
-            3.5,
+            3.8,
             0.6,
             0.3
           );
           context.particleSystem.emit(
-            s.targetPos,
-            s.targetNormal,
+            s.exitPos,
+            s.exitNormal,
             3,
-            '#ff8800',
+            '#ff3300',
             1.2,
             3.0,
             0.5,
             0.2
           );
         }
-
-        // Resonant tectonic pulse every 0.45 seconds
-        if (s.pulseTimer >= 0.45) {
-          s.pulseTimer = 0;
-          this.triggerResonantPulse(s, context);
-        }
-
-        // After 2.4 seconds of impalement, transition to ascending phase
-        if (s.phaseTimer >= 2.4) {
-          s.phase = 'ascending';
-          s.phaseTimer = 0;
-        }
       }
 
-      // ==========================================
-      // PHASE 4: ASCENDING (Dissolution into starlight)
-      // ==========================================
-      else if (s.phase === 'ascending') {
-        const fadeT = Math.min(1.0, s.phaseTimer / 1.0);
-        const invFade = 1.0 - fadeT;
+      // -------------------------------------------------------------
+      // FINAL FADE & ASCENSION INTO DEEP SPACE
+      // -------------------------------------------------------------
+      // Portal fades out after sword has entered
+      if (progress > 0.35 && s.portalGroup) {
+        const portalFade = Math.max(0, 1.0 - (progress - 0.35) / 0.25);
+        s.portalGroup.scale.set(portalFade, portalFade, portalFade);
+      }
 
-        // Scale down sword as it dissolves into ascending particles
-        s.group.scale.set(invFade, invFade, invFade);
-        s.mandalaGroup.scale.set(invFade, invFade, invFade);
-        s.lightBeam.scale.set(invFade * 1.2, 1, invFade * 1.2);
+      // Sword dissolves in final stretch into starlight
+      if (progress > 0.8) {
+        const fade = Math.max(0, (1.0 - progress) / 0.2);
+        s.group.scale.set(fade, fade, fade);
 
-        // Rising starlight particles ascending into heavens
+        // Ascending starlight sparkles
         context.particleSystem.emit(
-          s.targetPos,
-          s.targetNormal,
+          tipPos,
+          s.flightDir,
           5,
           '#aaccff',
-          1.8,
-          4.5,
+          1.5,
+          4.0,
           0.8,
           0.4
         );
+      }
 
-        if (fadeT >= 1.0) {
-          context.scene.remove(s.group);
-          context.scene.remove(s.mandalaGroup);
-          context.scene.remove(s.lightBeam);
-          disposeNode(s.group);
-          disposeNode(s.mandalaGroup);
-          disposeNode(s.lightBeam);
-          this.activeSwords.splice(i, 1);
-        }
+      // Completion & disposal
+      if (progress >= 1.0) {
+        context.scene.remove(s.group);
+        context.scene.remove(s.portalGroup);
+        disposeNode(s.group);
+        disposeNode(s.portalGroup);
+        this.activeSwords.splice(i, 1);
       }
     }
   }
 
   /**
-   * Cataclysmic initial impalement impact: massive craters, triple shockwaves, and sound.
+   * Cataclysmic entry impact on the targeted hemisphere.
    */
-  private triggerImpactCataclysm(s: ActiveSword, context: WeaponContext): void {
-    // 1. Register planetary crater & heat signature
+  private triggerEntryImpact(s: ActiveSword, context: WeaponContext): void {
+    // 1. Crater & fracture on entry side
     context.planet.registerImpact({
-      u: s.targetUV.u,
-      v: s.targetUV.v,
-      lat: s.targetLat,
-      lon: s.targetLon,
-      position: s.targetPos,
+      u: s.entryUV.u,
+      v: s.entryUV.v,
+      lat: s.entryLat,
+      lon: s.entryLon,
+      position: s.entryPos,
       radius: this.config.damageRadius,
       intensity: this.config.damageIntensity,
       heat: 1.0,
       timestamp: performance.now(),
     });
 
-    const planetRadius = context.planet.config.radius;
+    const R = s.planetRadius;
 
-    // 2. Multi-tier Divine Shockwaves
-    // Core instantaneous flash wave
-    context.shockwaveSystem.create(s.targetPos, s.targetNormal, planetRadius * 1.3, '#ffffff');
-    // Massive celestial turquoise shockwave
-    context.shockwaveSystem.create(s.targetPos, s.targetNormal, planetRadius * 1.8, '#00f0ff');
-    // Slower golden tectonic boundary shockwave
-    context.shockwaveSystem.create(s.targetPos, s.targetNormal, planetRadius * 0.9, '#ffcc00');
+    // 2. Multi-tier entry shockwaves
+    context.shockwaveSystem.create(s.entryPos, s.entryNormal, R * 1.2, '#ffffff');
+    context.shockwaveSystem.create(s.entryPos, s.entryNormal, R * 1.6, '#00f0ff');
+    context.shockwaveSystem.create(s.entryPos, s.entryNormal, R * 0.8, '#ff9900');
 
-    // 3. Colossal explosion ejecta
-    context.particleSystem.emit(s.targetPos, s.targetNormal, 110, '#00ffff', 3.0, 7.5, 2.2, 1.1);
-    context.particleSystem.emit(s.targetPos, s.targetNormal, 80, '#ffffff', 2.5, 6.0, 1.8, 0.9);
-    context.particleSystem.emit(s.targetPos, s.targetNormal, 70, '#ff9900', 2.2, 5.0, 1.6, 0.8);
+    // 3. Entry ejecta spray backwards into space
+    context.particleSystem.emit(s.entryPos, s.entryNormal, 90, '#00ffff', 2.8, 6.5, 2.0, 1.0);
+    context.particleSystem.emit(s.entryPos, s.entryNormal, 60, '#ffffff', 2.2, 5.0, 1.5, 0.8);
+    context.particleSystem.emit(s.entryPos, s.entryNormal, 50, '#ff6600', 1.8, 4.5, 1.4, 0.7);
 
-    // 4. Heavy camera shake & divine impact sound
-    context.cameraController.addTrauma(0.95);
+    // 4. Camera trauma & impact audio
+    context.cameraController.addTrauma(0.85);
     context.audioManager.playCelestialSword();
   }
 
   /**
-   * Secondary tectonic pulse waves while impaled in the planet.
+   * Cataclysmic breakthrough blowout on the OPPOSITE hemisphere.
    */
-  private triggerResonantPulse(s: ActiveSword, context: WeaponContext): void {
-    const planetRadius = context.planet.config.radius;
-
-    // Secondary localized damage impact
+  private triggerExitImpact(s: ActiveSword, context: WeaponContext): void {
+    // 1. Crater & fracture on exit side
     context.planet.registerImpact({
-      u: s.targetUV.u,
-      v: s.targetUV.v,
-      lat: s.targetLat,
-      lon: s.targetLon,
-      position: s.targetPos,
-      radius: this.config.damageRadius * 0.65,
-      intensity: this.config.damageIntensity * 0.45,
-      heat: 0.8,
+      u: s.exitUV.u,
+      v: s.exitUV.v,
+      lat: s.exitLat,
+      lon: s.exitLon,
+      position: s.exitPos,
+      radius: this.config.damageRadius * 0.9,
+      intensity: this.config.damageIntensity * 0.85,
+      heat: 1.0,
       timestamp: performance.now(),
     });
 
-    // Expanding resonance ring
-    context.shockwaveSystem.create(s.targetPos, s.targetNormal, planetRadius * 0.7, '#00e5ff');
+    const R = s.planetRadius;
 
-    // Trauma pulse
-    context.cameraController.addTrauma(0.35);
+    // 2. Violent exit shockwaves bursting outward
+    context.shockwaveSystem.create(s.exitPos, s.exitNormal, R * 1.4, '#00ffff');
+    context.shockwaveSystem.create(s.exitPos, s.exitNormal, R * 0.9, '#ff3300');
+    context.shockwaveSystem.create(s.exitPos, s.exitNormal, R * 0.5, '#ffffff');
 
-    // Holy spark burst
-    context.particleSystem.emit(s.targetPos, s.targetNormal, 24, '#88ffff', 1.8, 4.0, 1.0, 0.5);
+    // 3. Massive blowout geyser into space
+    context.particleSystem.emit(s.exitPos, s.exitNormal, 100, '#00ffff', 3.2, 7.5, 2.2, 1.2);
+    context.particleSystem.emit(s.exitPos, s.exitNormal, 70, '#ff3300', 2.5, 6.0, 1.8, 0.9);
+    context.particleSystem.emit(s.exitPos, s.exitNormal, 50, '#ffd700', 2.0, 5.0, 1.5, 0.7);
+
+    // 4. Secondary camera trauma & sound
+    context.cameraController.addTrauma(0.9);
+    context.audioManager.playCelestialSword();
   }
 
   public dispose(): void {
     for (const s of this.activeSwords) {
       disposeNode(s.group);
-      disposeNode(s.mandalaGroup);
-      disposeNode(s.lightBeam);
+      disposeNode(s.portalGroup);
     }
     this.activeSwords = [];
   }
