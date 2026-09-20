@@ -526,5 +526,229 @@ export class AudioManager {
     osc.start(now);
     osc.stop(now + 0.55);
   }
+
+  public playDragonBreath(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    this.playNoiseBurst(0.7, 800, 1.8);
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(110, now);
+    osc.frequency.linearRampToValueAtTime(80, now + 1.5);
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.7);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 1.8);
+  }
+
+  public playCelestialSword(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    const now = this.ctx.currentTime;
+    // Divine resonant chime
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(523.25, now); // C5
+    osc1.frequency.exponentialRampToValueAtTime(1046.5, now + 0.8);
+    gain1.gain.setValueAtTime(0.6, now);
+    gain1.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+    osc1.connect(gain1);
+    gain1.connect(this.sfxGain);
+    osc1.start(now);
+    osc1.stop(now + 1.3);
+    // Deep impalement thud
+    this.playNoiseBurst(0.85, 300, 1.2);
+  }
+
+  public playTitanStomp(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    this.playNoiseBurst(1.0, 200, 1.5);
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(80, now);
+    osc.frequency.exponentialRampToValueAtTime(20, now + 1.0);
+    gain.gain.setValueAtTime(0.85, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.3);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 1.4);
+  }
+
+  public playEmpBlast(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1200, now);
+    osc.frequency.exponentialRampToValueAtTime(60, now + 0.6);
+    gain.gain.setValueAtTime(0.7, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.7);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.75);
+    this.playNoiseBurst(0.5, 2400, 0.4);
+  }
+
+  public playNaniteDevour(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.linearRampToValueAtTime(880, now + 0.5);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.65);
+    this.playNoiseBurst(0.3, 3500, 0.6);
+  }
+
+  public playGravityInvert(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(50, now);
+    osc.frequency.exponentialRampToValueAtTime(450, now + 1.2);
+    gain.gain.setValueAtTime(0.65, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.4);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 1.5);
+  }
+
+  public playChunkExtractor(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 1.4);
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 1.6);
+    this.playNoiseBurst(0.6, 600, 1.2);
+  }
+
+  public playTungstenImpact(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    // Hypersonic crack
+    this.playNoiseBurst(0.9, 1800, 0.4);
+    // Heavy kinetic sub-bass
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.8);
+    gain.gain.setValueAtTime(0.8, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.9);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 1.0);
+  }
+
+  public playTectonicRumble(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    this.playNoiseBurst(0.7, 180, 2.5);
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(45, now);
+    osc.frequency.linearRampToValueAtTime(30, now + 2.0);
+    gain.gain.setValueAtTime(0.7, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 2.4);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 2.5);
+  }
+
+  public playSolarMirrorBurn(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    this.playNoiseBurst(0.55, 1200, 1.5);
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.linearRampToValueAtTime(600, now + 1.2);
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.4);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 1.5);
+  }
+
+  public playCryoFreeze(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    this.playNoiseBurst(0.4, 2800, 1.2);
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(1760, now + 0.8);
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 1.0);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 1.1);
+  }
+
+  public playSolarFlare(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    this.playNoiseBurst(0.85, 450, 2.5);
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(60, now);
+    osc.frequency.linearRampToValueAtTime(40, now + 2.0);
+    gain.gain.setValueAtTime(0.65, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 2.4);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 2.5);
+  }
+
+  public playNeutronStarPulsar(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(320, now);
+    osc.frequency.exponentialRampToValueAtTime(120, now + 1.8);
+    gain.gain.setValueAtTime(0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 2.0);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 2.1);
+    this.playNoiseBurst(0.6, 900, 1.8);
+  }
 }
 

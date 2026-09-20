@@ -33,6 +33,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  ChevronsDown,
+  MoveVertical,
+  Scissors,
+  Footprints,
+  Hand,
+  Target,
   LucideIcon,
 } from 'lucide-react';
 
@@ -72,6 +78,12 @@ const ICON_MAP: Record<string, LucideIcon> = {
   HandMetal,
   Octagon,
   Sparkles,
+  ChevronsDown,
+  MoveVertical,
+  Scissors,
+  Footprints,
+  Hand,
+  Target,
 };
 
 const CATEGORY_THEMES: Record<WeaponCategory, { color: string; bgGlow: string }> = {
