@@ -3,9 +3,10 @@ import { PlanetConfig } from '../types/planet';
 import { WeaponId, TargetInfo } from '../types/weapon';
 import { ShieldType, ActiveShieldState } from '../types/shield';
 import { PlanetIntegrity } from '../types/game';
-import { RotateCcw, Sliders, Globe, Maximize, Users, AlertTriangle, Skull, Activity, Satellite, Shield } from 'lucide-react';
+import { RotateCcw, Sliders, Globe, Maximize, Users, AlertTriangle, Skull, Activity, Satellite, Shield, Orbit, Moon, Flame, MoveUpRight } from 'lucide-react';
 import { WeaponToolbar } from './WeaponToolbar';
 import { ControlsHelp } from './ControlsHelp';
+import { MoonState } from '../planets/MoonSystem';
 
 interface HUDProps {
   planet: PlanetConfig;
@@ -25,6 +26,12 @@ interface HUDProps {
   onOpenSettings: () => void;
   onReset: () => void;
   onToggleFullscreen: () => void;
+  moonState: MoonState | null;
+  onSlingshotMoon: () => void;
+  onDeorbitMoon: () => void;
+  onResetMoon: () => void;
+  isSolarView: boolean;
+  onToggleSolarView: () => void;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -45,6 +52,12 @@ export const HUD: React.FC<HUDProps> = ({
   onOpenSettings,
   onReset,
   onToggleFullscreen,
+  moonState,
+  onSlingshotMoon,
+  onDeorbitMoon,
+  onResetMoon,
+  isSolarView,
+  onToggleSolarView,
 }) => {
   // Compute integrity color
   const hpPercent = integrity.percentage;
@@ -161,6 +174,16 @@ export const HUD: React.FC<HUDProps> = ({
             <span>Satellite Map</span>
           </button>
 
+          {/* Solar System Orrery Overview */}
+          <button
+            className={`hud-btn ${isSolarView ? 'active-cyan' : 'btn-cyan'}`}
+            onClick={onToggleSolarView}
+            title={isSolarView ? 'Return to Close Planetary Orbit' : 'Zoom Out to Solar System Orrery View'}
+          >
+            <Orbit size={16} />
+            <span>{isSolarView ? 'Planet View' : 'Solar View'}</span>
+          </button>
+
           <button className="hud-btn btn-cyan" onClick={onOpenPlanetSelector} title="Select Planet">
             <Globe size={16} />
             <span>Planets</span>
@@ -181,6 +204,56 @@ export const HUD: React.FC<HUDProps> = ({
 
       {/* Right Side Telemetry & Demographics Monitor */}
       <div className="hud-right-panel">
+        {/* Moon Orbital Physics & Gravitational Weapons Card */}
+        {moonState !== null && (
+          <div className="hud-moon-card">
+            <div className="moon-header">
+              <div className="moon-title-wrap">
+                <Moon size={14} style={{ color: '#66ccff' }} />
+                <span>LUNAR ORBIT</span>
+              </div>
+              <span className={`moon-status-tag ${moonState}`}>
+                {moonState === 'orbiting'
+                  ? 'STABLE'
+                  : moonState === 'deorbiting'
+                  ? 'COLLISION'
+                  : moonState === 'slingshot'
+                  ? 'ESCAPING'
+                  : 'DESTROYED'}
+              </span>
+            </div>
+
+            <div className="moon-actions-grid">
+              <button
+                className="moon-action-btn btn-crash"
+                onClick={onDeorbitMoon}
+                disabled={moonState === 'deorbiting' || moonState === 'destroyed'}
+                title="De-orbit Moon on a collision course into Earth"
+              >
+                <Flame size={13} />
+                <span>Crash Moon</span>
+              </button>
+              <button
+                className="moon-action-btn btn-sling"
+                onClick={onSlingshotMoon}
+                disabled={moonState === 'slingshot' || moonState === 'destroyed'}
+                title="Slingshot Moon out of orbit into deep space"
+              >
+                <MoveUpRight size={13} />
+                <span>Slingshot</span>
+              </button>
+              <button
+                className="moon-action-btn btn-reset"
+                onClick={onResetMoon}
+                title="Restore Moon to stable orbit"
+              >
+                <RotateCcw size={13} />
+                <span>Restore</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Population & Demographics Card */}
         {pop && pop.initial > 0 && (
           <div className={`hud-population-card ${pop.current === 0 ? 'extinction' : ''}`}>

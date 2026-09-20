@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
-export type PlanetCategory = 'solar_tier1' | 'solar_tier2' | 'fictional';
-export type SurfaceType = 'earth_like' | 'rocky_desert' | 'gas_giant' | 'ice_world' | 'volcanic' | 'oceanic' | 'star';
+export type PlanetCategory = 'solar_tier1' | 'solar_tier2' | 'fictional' | 'cosmic';
+export type SurfaceType = 'earth_like' | 'rocky_desert' | 'gas_giant' | 'ice_world' | 'volcanic' | 'oceanic' | 'star' | 'cybernetic' | 'black_hole';
 
 export interface SurfaceProfile {
   type: SurfaceType;

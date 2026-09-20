@@ -575,6 +575,141 @@ body, html, #root {
   width: 280px;
 }
 
+/* ================= MOON ORBITAL TELEMETRY & CONTROLS ================= */
+.hud-moon-card {
+  background: var(--hud-bg-glass-card);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(102, 204, 255, 0.35);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  transition: all 0.3s ease;
+}
+
+.hud-moon-card:hover {
+  border-color: rgba(102, 204, 255, 0.6);
+  box-shadow: 0 0 16px rgba(102, 204, 255, 0.25);
+}
+
+.moon-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.moon-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  font-family: var(--font-mono);
+}
+
+.moon-status-tag {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.moon-status-tag.orbiting {
+  background: rgba(0, 255, 204, 0.15);
+  color: #00ffcc;
+  border: 1px solid rgba(0, 255, 204, 0.3);
+}
+
+.moon-status-tag.deorbiting {
+  background: rgba(255, 68, 0, 0.2);
+  color: #ff5500;
+  border: 1px solid rgba(255, 68, 0, 0.5);
+  animation: pulse-danger 1s infinite alternate;
+}
+
+.moon-status-tag.slingshot {
+  background: rgba(0, 200, 255, 0.2);
+  color: #33ccff;
+  border: 1px solid rgba(0, 200, 255, 0.4);
+}
+
+.moon-status-tag.destroyed {
+  background: rgba(255, 0, 0, 0.25);
+  color: #ff3344;
+  border: 1px solid rgba(255, 0, 0, 0.6);
+}
+
+.moon-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.moon-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.moon-action-btn.btn-crash {
+  background: rgba(255, 68, 0, 0.15);
+  border-color: rgba(255, 68, 0, 0.4);
+  color: #ff6622;
+}
+
+.moon-action-btn.btn-crash:hover:not(:disabled) {
+  background: rgba(255, 68, 0, 0.35);
+  border-color: #ff5500;
+  box-shadow: 0 0 10px rgba(255, 85, 0, 0.4);
+}
+
+.moon-action-btn.btn-sling {
+  background: rgba(0, 229, 255, 0.15);
+  border-color: rgba(0, 229, 255, 0.4);
+  color: #00f0ff;
+}
+
+.moon-action-btn.btn-sling:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.35);
+  border-color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+.moon-action-btn.btn-reset {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ccc;
+}
+
+.moon-action-btn.btn-reset:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: #fff;
+  color: #fff;
+}
+
+.moon-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .hud-population-card {
   background: var(--hud-bg-glass-card);
   backdrop-filter: blur(14px);

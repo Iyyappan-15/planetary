@@ -14,6 +14,7 @@ import { loadStoredSettings, saveStoredSettings } from './utils/storage';
 import './styles/hud.css';
 
 import { ShieldType, ActiveShieldState } from './types/shield';
+import { MoonState } from './planets/MoonSystem';
 
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -25,6 +26,8 @@ export const App: React.FC = () => {
   const [activeWeaponId, setActiveWeaponId] = useState<WeaponId | null>('nuclear_missile');
   const [activeShield, setActiveShield] = useState<ActiveShieldState | null>(null);
   const [isRotationPaused, setIsRotationPaused] = useState<boolean>(false);
+  const [moonState, setMoonState] = useState<MoonState | null>('orbiting');
+  const [isSolarView, setIsSolarView] = useState<boolean>(false);
   const [integrity, setIntegrity] = useState<PlanetIntegrity>({
     currentHp: 100,
     maxHp: 100,
@@ -55,6 +58,8 @@ export const App: React.FC = () => {
       onTargetChange: (target) => setTargetInfo(target),
       onActiveWeaponChange: (wId) => setActiveWeaponId(wId),
       onShieldChange: (shield) => setActiveShield(shield),
+      onMoonStateChange: (mState) => setMoonState(mState),
+      onSolarViewChange: (isSolar) => setIsSolarView(isSolar),
     });
 
     gameRef.current = game;
@@ -168,9 +173,25 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleResetPlanet, handleToggleRotation, handleToggleFullscreen, handleSelectWeapon]);
 
+  const handleSlingshotMoon = useCallback(() => {
+    gameRef.current?.slingshotMoon();
+  }, []);
+
+  const handleDeorbitMoon = useCallback(() => {
+    gameRef.current?.deorbitMoon();
+  }, []);
+
+  const handleResetMoon = useCallback(() => {
+    gameRef.current?.resetMoon();
+  }, []);
+
+  const handleToggleSolarView = useCallback(() => {
+    gameRef.current?.toggleSolarView();
+  }, []);
+
   return (
     <div className="planetary-container">
-      {/* 3D WebGL Canvas */}
+      {/* 3D WebGL Viewport Canvas */}
       <canvas ref={canvasRef} className="webgl-canvas" />
 
       {/* Entry Landing Screen */}
@@ -196,6 +217,12 @@ export const App: React.FC = () => {
           onOpenSettings={() => setIsSettingsOpen(true)}
           onReset={handleResetPlanet}
           onToggleFullscreen={handleToggleFullscreen}
+          moonState={moonState}
+          onSlingshotMoon={handleSlingshotMoon}
+          onDeorbitMoon={handleDeorbitMoon}
+          onResetMoon={handleResetMoon}
+          isSolarView={isSolarView}
+          onToggleSolarView={handleToggleSolarView}
         />
       )}
 

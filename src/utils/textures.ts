@@ -402,6 +402,26 @@ export class ProceduralTextures {
           if (minSpot < 0.18) {
             accent = 1.0 - minSpot / 0.18;
           }
+        } else if (profile.type === 'cybernetic') {
+          // Titanium-tungsten geometric hull panels
+          t = (noise.fbm2D(nx * 6.0, ny * 6.0 + nz * 6.0, 3, 2.0, 0.5) + 1.0) * 0.5;
+
+          // Orthogonal cybernetic circuit traces
+          const gridU = Math.abs((u * 48.0) % 1.0 - 0.5);
+          const gridV = Math.abs((v * 24.0) % 1.0 - 0.5);
+          const isTrace = (gridU < 0.08 || gridV < 0.08);
+          const traceNoise = (noise.fbm2D(nx * 14.0 + 50, ny * 14.0 + nz * 14.0 + 50, 3, 2.0, 0.5) + 1.0) * 0.5;
+
+          if (isTrace && traceNoise > 0.42) {
+            accent = (traceNoise - 0.42) / 0.58;
+          }
+        } else if (profile.type === 'black_hole') {
+          // Singularity core: event horizon darkness with equatorial photon warping
+          t = 0.02;
+          const eqDist = Math.abs(ny);
+          if (eqDist < 0.3) {
+            accent = Math.pow(1.0 - eqDist / 0.3, 2.0);
+          }
         } else {
           // Rocky desert (Mars), Ice world, or Oceanic
           t = (noise.fbm2D(nx * 2.5, ny * 2.5 + nz * 2.5, 5, 2.0, 0.5) + 1.0) * 0.5;
@@ -422,6 +442,19 @@ export class ProceduralTextures {
           if (accent > 0) {
             const sunspotColor = new THREE.Color('#380e03');
             finalCol.lerp(sunspotColor, Math.pow(accent, 1.4));
+          }
+        } else if (profile.type === 'cybernetic') {
+          if (accent > 0) {
+            // Glowing neon cyan / magenta circuitry tracks
+            const neonCol = (Math.sin(u * 60.0 + v * 30.0) > 0) ? new THREE.Color('#00f0ff') : new THREE.Color('#ff0099');
+            finalCol.lerp(neonCol, accent * 0.95);
+          }
+        } else if (profile.type === 'black_hole') {
+          finalCol = new THREE.Color('#010206');
+          if (accent > 0) {
+            // Relativistic plasma accretion ring glow
+            const accretionCol = new THREE.Color('#ff7700').lerp(new THREE.Color('#00ffff'), Math.sin(u * 12.0) * 0.5 + 0.5);
+            finalCol.lerp(accretionCol, accent * 0.85);
           }
         } else if (accent > 0) {
           finalCol.lerp(colAccent, accent);

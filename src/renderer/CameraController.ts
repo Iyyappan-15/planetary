@@ -83,22 +83,49 @@ export class CameraController {
     this.trauma = clamp(this.trauma + amount, 0, 1.0);
   }
 
+  public isSolarView: boolean = false;
+  private planetRadiusCached: number = 2.2;
+
   public resetCamera(): void {
+    this.isSolarView = false;
     this.targetRadius = 7.0;
     this.targetTheta = -1.386;
     this.targetPhi = 1.232;
   }
 
   public setPlanetRadius(radius: number): void {
-    this.minRadius = radius * 1.12; // Allow close satellite orbit inspection
-    this.maxRadius = radius * 8.0;
-    this.targetRadius = clamp(this.targetRadius, this.minRadius, this.maxRadius);
+    this.planetRadiusCached = radius;
+    if (this.isSolarView) {
+      this.minRadius = radius * 1.12;
+      this.maxRadius = 60.0;
+    } else {
+      this.minRadius = radius * 1.12; // Allow close satellite orbit inspection
+      this.maxRadius = radius * 8.0;
+      this.targetRadius = clamp(this.targetRadius, this.minRadius, this.maxRadius);
+    }
+  }
+
+  /**
+   * Toggles between close planetary orbit and wide Solar System / Orrery view
+   */
+  public toggleSolarView(): boolean {
+    this.isSolarView = !this.isSolarView;
+    if (this.isSolarView) {
+      this.maxRadius = 60.0;
+      this.targetRadius = 38.0;
+      this.targetPhi = 0.95; // Angled perspective over the ecliptic orbital plane
+    } else {
+      this.setPlanetRadius(this.planetRadiusCached);
+      this.targetRadius = this.planetRadiusCached * 3.1;
+    }
+    return this.isSolarView;
   }
 
   /**
    * Smoothly locks the camera into low-orbital satellite inspection over target coordinates
    */
   public focusOnCoordinates(lat: number, lon: number, altitudeMultiplier: number = 1.35): void {
+    this.isSolarView = false;
     const phi = (90 - lat) * (Math.PI / 180);
     const theta = (lon + 180) * (Math.PI / 180);
 

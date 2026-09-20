@@ -196,22 +196,34 @@ export class WeaponManager {
 
     this.raycaster.setFromCamera(this.mouseVec, camera);
 
-    if (context.planet.isDestroyed) {
+    const targetables: THREE.Object3D[] = [];
+    if (!context.planet.isDestroyed) {
+      targetables.push(context.planet.surfaceMesh);
+    }
+    if (context.moonMesh && context.moonMesh.visible) {
+      targetables.push(context.moonMesh);
+    }
+
+    if (targetables.length === 0) {
       this.targetMarker.visible = false;
       this.currentTarget = null;
       return null;
     }
 
-    const intersects = this.raycaster.intersectObject(context.planet.surfaceMesh, false);
+    const intersects = this.raycaster.intersectObjects(targetables, false);
 
     if (intersects.length > 0) {
       const hit = intersects[0];
       const point = hit.point.clone();
       const normal = hit.normal ? hit.normal.clone() : point.clone().normalize();
 
-      // Compute UV in local planet space (accounting for planet rotation)
+      const isMoonHit = Boolean(context.moonMesh && hit.object === context.moonMesh);
       const localPoint = point.clone();
-      context.planet.surfaceMesh.worldToLocal(localPoint);
+      if (isMoonHit && context.moonMesh) {
+        context.moonMesh.worldToLocal(localPoint);
+      } else {
+        context.planet.surfaceMesh.worldToLocal(localPoint);
+      }
       const uv = hit.uv ? { u: hit.uv.x, v: hit.uv.y } : vector3ToUV(localPoint);
       const { lat, lon } = vector3ToLatLon(localPoint);
 

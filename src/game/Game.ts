@@ -13,12 +13,15 @@ import { AudioManager } from '../audio/AudioManager';
 import { GravityWellWeapon } from '../weapons/gravity/GravityWell';
 import { latLonToVector3, vector3ToUV } from '../utils/math';
 import { ShieldType, ActiveShieldState } from '../types/shield';
+import { MoonSystem, MoonState } from '../planets/MoonSystem';
 
 export interface GameCallbacks {
   onIntegrityChange?: (integrity: PlanetIntegrity) => void;
   onTargetChange?: (target: TargetInfo | null) => void;
   onActiveWeaponChange?: (weaponId: WeaponId | null) => void;
   onShieldChange?: (shield: ActiveShieldState | null) => void;
+  onMoonStateChange?: (state: MoonState | null) => void;
+  onSolarViewChange?: (isSolarView: boolean) => void;
 }
 
 export class Game {
@@ -33,6 +36,8 @@ export class Game {
   public particleSystem: ParticleSystem;
   public shockwaveSystem: ShockwaveSystem;
   public audioManager: AudioManager;
+
+  public moonSystem: MoonSystem | null = null;
 
   private isRunning: boolean = false;
   private animationFrameId: number = 0;
@@ -82,12 +87,28 @@ export class Game {
     this.cameraController.setPlanetRadius(defaultPlanetConfig.radius);
     this.hookPlanetCallbacks();
 
+    // Initialize Moon if default world is Earth
+    if (defaultPlanetConfig.id === 'earth') {
+      this.initMoonSystem();
+    }
+
     // 6. Weapon Manager
     this.weaponManager = new WeaponManager();
     this.sceneManager.scene.add(this.weaponManager.targetMarker);
 
     // Bind event listeners
     this.bindEvents();
+  }
+
+  private initMoonSystem(): void {
+    if (this.moonSystem) {
+      this.sceneManager.scene.remove(this.moonSystem.group);
+      this.moonSystem.dispose();
+      this.moonSystem = null;
+    }
+    this.moonSystem = new MoonSystem();
+    this.sceneManager.scene.add(this.moonSystem.group);
+    this.callbacks.onMoonStateChange?.(this.moonSystem.state);
   }
 
   public start(): void {
@@ -125,6 +146,7 @@ export class Game {
       particleSystem: this.particleSystem,
       shockwaveSystem: this.shockwaveSystem,
       audioManager: this.audioManager,
+      moonMesh: this.moonSystem?.moonMesh,
     };
 
     // Update targeting if pointer is over canvas
@@ -165,6 +187,19 @@ export class Game {
     }
 
     this.planet.update(delta, this.sceneManager.sunLight.position, gravPos);
+
+    if (this.moonSystem) {
+      this.moonSystem.update(delta, {
+        scene: this.sceneManager.scene,
+        planet: this.planet,
+        particleSystem: this.particleSystem,
+        shockwaveSystem: this.shockwaveSystem,
+        cameraController: this.cameraController,
+        audioManager: this.audioManager,
+      });
+      this.callbacks.onMoonStateChange?.(this.moonSystem.state);
+    }
+
     this.weaponManager.update(delta, context);
     this.shockwaveSystem.update(delta);
     this.particleSystem.update(delta, gravPos);
@@ -216,6 +251,16 @@ export class Game {
     this.cameraController.resetCamera();
     this.hookPlanetCallbacks();
     this.wasDestroyed = false;
+
+    // Handle Moon for Earth
+    if (newConfig.id === 'earth') {
+      this.initMoonSystem();
+    } else if (this.moonSystem) {
+      this.sceneManager.scene.remove(this.moonSystem.group);
+      this.moonSystem.dispose();
+      this.moonSystem = null;
+      this.callbacks.onMoonStateChange?.(null);
+    }
 
     this.audioManager.playReset();
   }
@@ -331,7 +376,51 @@ export class Game {
     this.planet.reset();
     this.cameraController.resetCamera();
     this.wasDestroyed = false;
+
+    if (this.moonSystem) {
+      this.moonSystem.reset();
+      this.callbacks.onMoonStateChange?.(this.moonSystem.state);
+    }
+
     this.audioManager.playReset();
+  }
+
+  public slingshotMoon(): void {
+    if (!this.moonSystem) return;
+    this.moonSystem.slingshot({
+      scene: this.sceneManager.scene,
+      planet: this.planet,
+      particleSystem: this.particleSystem,
+      shockwaveSystem: this.shockwaveSystem,
+      cameraController: this.cameraController,
+      audioManager: this.audioManager,
+    });
+    this.callbacks.onMoonStateChange?.(this.moonSystem.state);
+  }
+
+  public deorbitMoon(): void {
+    if (!this.moonSystem) return;
+    this.moonSystem.deorbit({
+      scene: this.sceneManager.scene,
+      planet: this.planet,
+      particleSystem: this.particleSystem,
+      shockwaveSystem: this.shockwaveSystem,
+      cameraController: this.cameraController,
+      audioManager: this.audioManager,
+    });
+    this.callbacks.onMoonStateChange?.(this.moonSystem.state);
+  }
+
+  public resetMoon(): void {
+    if (!this.moonSystem) return;
+    this.moonSystem.reset();
+    this.callbacks.onMoonStateChange?.(this.moonSystem.state);
+  }
+
+  public toggleSolarView(): boolean {
+    const isSolar = this.cameraController.toggleSolarView();
+    this.callbacks.onSolarViewChange?.(isSolar);
+    return isSolar;
   }
 
   public updateSettings(settings: GameSettings): void {
