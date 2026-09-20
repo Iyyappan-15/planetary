@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export type WeaponCategory = 'explosives' | 'lasers' | 'celestial' | 'alien' | 'monsters';
+export type WeaponCategory = 'explosives' | 'lasers' | 'celestial' | 'alien' | 'monsters' | 'shields';
 
 export type WeaponId =
   // Explosives & Missiles

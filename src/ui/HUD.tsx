@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { PlanetConfig } from '../types/planet';
 import { WeaponId, TargetInfo } from '../types/weapon';
+import { ShieldType, ActiveShieldState } from '../types/shield';
 import { PlanetIntegrity } from '../types/game';
-import { RotateCcw, Sliders, Globe, Maximize, Users, AlertTriangle, Skull, Activity, Satellite } from 'lucide-react';
+import { RotateCcw, Sliders, Globe, Maximize, Users, AlertTriangle, Skull, Activity, Satellite, Shield } from 'lucide-react';
 import { WeaponToolbar } from './WeaponToolbar';
 import { ControlsHelp } from './ControlsHelp';
 
@@ -16,6 +17,9 @@ interface HUDProps {
   isCloudsVisible: boolean;
   onToggleClouds: () => void;
   onSelectWeapon: (id: WeaponId | null) => void;
+  activeShield: ActiveShieldState | null;
+  onDeployShield: (type: ShieldType) => void;
+  onRemoveShield: () => void;
   onOpenPlanetSelector: () => void;
   onOpenSatelliteMap: () => void;
   onOpenSettings: () => void;
@@ -33,6 +37,9 @@ export const HUD: React.FC<HUDProps> = ({
   isCloudsVisible,
   onToggleClouds,
   onSelectWeapon,
+  activeShield,
+  onDeployShield,
+  onRemoveShield,
   onOpenPlanetSelector,
   onOpenSatelliteMap,
   onOpenSettings,
@@ -93,6 +100,31 @@ export const HUD: React.FC<HUDProps> = ({
               {integrity.isBroken ? 'CATASTROPHIC FAILURE' : `${hpPercent}% INTEGRITY`}
             </span>
           </div>
+
+          {/* Active Planetary Shield Health Status */}
+          {activeShield && (
+            <div className="shield-header-row" style={{ borderColor: activeShield.color }}>
+              <div className="shield-title-wrap">
+                <Shield size={12} style={{ color: activeShield.color }} />
+                <span className="shield-name-text" style={{ color: activeShield.color }}>
+                  {activeShield.name.toUpperCase()}
+                </span>
+              </div>
+              <div className="shield-bar-wrap">
+                <div
+                  className="shield-bar-fill"
+                  style={{
+                    width: `${activeShield.percentage}%`,
+                    backgroundColor: activeShield.color,
+                    boxShadow: `0 0 8px ${activeShield.color}`,
+                  }}
+                />
+              </div>
+              <span className="shield-hp-text" style={{ color: activeShield.color }}>
+                {activeShield.currentHp.toLocaleString()} / {activeShield.maxHp.toLocaleString()} HP ({activeShield.percentage}%)
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
@@ -240,8 +272,14 @@ export const HUD: React.FC<HUDProps> = ({
         )}
       </div>
 
-      {/* Weapon Arsenal Toolbar */}
-      <WeaponToolbar activeWeaponId={activeWeaponId} onSelectWeapon={onSelectWeapon} />
+      {/* Weapon Arsenal & Shield Toolbar */}
+      <WeaponToolbar
+        activeWeaponId={activeWeaponId}
+        onSelectWeapon={onSelectWeapon}
+        activeShield={activeShield}
+        onDeployShield={onDeployShield}
+        onRemoveShield={onRemoveShield}
+      />
 
       {/* Bottom Cheatsheet Help */}
       <ControlsHelp />

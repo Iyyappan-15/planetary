@@ -38,6 +38,12 @@ export const WEAPON_CATEGORIES: WeaponCategoryInfo[] = [
     iconName: 'Bug',
     description: 'Colossal cosmic entities: subterranean space worms, celestial fists, and void tentacles.',
   },
+  {
+    id: 'shields',
+    name: 'Shields',
+    iconName: 'Shield',
+    description: 'Deploy persistent planetary forcefields with unique health and damage mitigation.',
+  },
 ];
 
 export const WEAPON_DEFINITIONS: WeaponConfig[] = [

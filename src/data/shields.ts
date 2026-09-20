@@ -1,0 +1,48 @@
+import { ShieldConfig } from '../types/shield';
+
+export const SHIELD_DEFINITIONS: ShieldConfig[] = [
+  {
+    id: 'hex_barrier',
+    name: 'Hex Energy Barrier',
+    maxHp: 1200,
+    color: '#00f0ff',
+    glowColor: 'rgba(0, 240, 255, 0.4)',
+    description: 'Balanced omni-directional protection grid with pulsating cyan hexagonal forcefield cells and impact ripples.',
+    resistanceType: 'balanced',
+    iconName: 'Shield',
+    absorptionBonus: 'Balanced All-Type Defense (1,200 HP)',
+  },
+  {
+    id: 'plasma_deflector',
+    name: 'Plasma Deflector',
+    maxHp: 2000,
+    color: '#ffaa00',
+    glowColor: 'rgba(255, 170, 0, 0.4)',
+    description: 'High-energy superheated plasma envelope with 50% extra resistance against lasers, beams, and thermal attacks.',
+    resistanceType: 'energy',
+    iconName: 'ShieldAlert',
+    absorptionBonus: '+50% Laser & Thermal Resistance (2,000 HP)',
+  },
+  {
+    id: 'magnetic_aegis',
+    name: 'Magnetic Aegis',
+    maxHp: 2800,
+    color: '#3388ff',
+    glowColor: 'rgba(51, 136, 255, 0.4)',
+    description: 'Heavy electromagnetic flux barrier designed to absorb hyper-velocity ballistic missiles, meteors, and asteroids.',
+    resistanceType: 'kinetic',
+    iconName: 'ShieldCheck',
+    absorptionBonus: '+50% Kinetic & Missile Resistance (2,800 HP)',
+  },
+  {
+    id: 'void_ward',
+    name: 'Celestial Void Ward',
+    maxHp: 4500,
+    color: '#cc22ff',
+    glowColor: 'rgba(204, 34, 255, 0.4)',
+    description: 'Mythic cosmic shield capable of withstanding black hole suction, planetary lasers, and colossal titan strikes.',
+    resistanceType: 'cosmic',
+    iconName: 'Shield',
+    absorptionBonus: 'Max Titan & Cosmic Resistance (4,500 HP)',
+  },
+];

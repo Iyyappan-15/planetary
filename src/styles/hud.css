@@ -257,11 +257,11 @@ body, html, #root {
 
 /* ================= WEAPON TOOLBAR ================= */
 
-/* ================= SOLAR SMASH SIGNATURE WEAPON DOCK ================= */
+/* ================= SOLAR SMASH SIGNATURE WEAPON DOCK (LEFT ALIGNED) ================= */
 
 .solar-smash-weapon-dock {
   position: absolute;
-  right: 20px;
+  left: 20px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -271,7 +271,7 @@ body, html, #root {
   user-select: none;
 }
 
-/* Category Dock Strip (Right Edge) */
+/* Category Dock Strip (Left Edge) */
 .category-dock-strip {
   display: flex;
   flex-direction: column;
@@ -326,7 +326,7 @@ body, html, #root {
   text-transform: uppercase;
 }
 
-/* Slide-out Weapon Selection Drawer */
+/* Slide-out Selection Drawer (Opens to the Right) */
 .weapon-drawer {
   display: flex;
   flex-direction: column;
@@ -337,7 +337,7 @@ body, html, #root {
   border-radius: 16px;
   padding: 14px;
   box-shadow: 0 14px 44px rgba(0, 0, 0, 0.75);
-  width: 250px;
+  width: 270px;
   max-height: 82vh;
   overflow-y: auto;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -346,7 +346,7 @@ body, html, #root {
 .weapon-drawer.closed {
   opacity: 0;
   pointer-events: none;
-  transform: translateX(20px) scale(0.95);
+  transform: translateX(-20px) scale(0.95);
   display: none;
 }
 
@@ -412,12 +412,12 @@ body, html, #root {
 .drawer-weapon-card:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.25);
-  transform: translateX(-2px);
+  transform: translateX(2px);
 }
 
 .drawer-weapon-card.active {
   background: rgba(255, 255, 255, 0.1);
-  transform: translateX(-3px);
+  transform: translateX(3px);
 }
 
 .card-icon-wrap {
@@ -437,6 +437,13 @@ body, html, #root {
   gap: 2px;
   flex: 1;
   min-width: 0;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
 }
 
 .card-name {
@@ -466,18 +473,114 @@ body, html, #root {
   border-radius: 4px;
 }
 
-/* ================= LEFT PANEL DEMOGRAPHICS & TELEMETRY ================= */
+/* Shield Card Custom Details */
+.drawer-weapon-card.shield-card {
+  padding: 10px 12px;
+}
+
+.shield-hp-badge {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.shield-bonus-tag {
+  font-size: 8.5px;
+  color: rgba(255, 255, 255, 0.65);
+  font-family: var(--font-mono);
+}
+
+.card-status-active {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #000;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+
+.deactivate-shield-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 51, 68, 0.15);
+  border: 1px solid rgba(255, 51, 68, 0.4);
+  color: #ff5566;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.deactivate-shield-btn:hover {
+  background: rgba(255, 51, 68, 0.28);
+  border-color: rgba(255, 51, 68, 0.7);
+  box-shadow: 0 0 10px rgba(255, 51, 68, 0.35);
+}
+
+/* Header Active Shield Status Row */
+.shield-header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+  border: 1px solid;
+  animation: pulse-border 2s infinite ease-in-out;
+}
+
+.shield-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shield-name-text {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-family: var(--font-mono);
+}
+
+.shield-bar-wrap {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 80px;
+}
+
+.shield-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.25s ease;
+}
+
+.shield-hp-text {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+/* ================= RIGHT PANEL DEMOGRAPHICS & TELEMETRY ================= */
 
 .hud-right-panel {
   position: absolute;
-  left: 24px;
+  right: 24px;
   top: 80px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   z-index: 10;
   pointer-events: none;
-  width: 270px;
+  width: 280px;
 }
 
 .hud-population-card {

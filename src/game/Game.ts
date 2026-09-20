@@ -12,11 +12,13 @@ import { ShockwaveSystem } from '../effects/Shockwave';
 import { AudioManager } from '../audio/AudioManager';
 import { GravityWellWeapon } from '../weapons/gravity/GravityWell';
 import { latLonToVector3, vector3ToUV } from '../utils/math';
+import { ShieldType, ActiveShieldState } from '../types/shield';
 
 export interface GameCallbacks {
   onIntegrityChange?: (integrity: PlanetIntegrity) => void;
   onTargetChange?: (target: TargetInfo | null) => void;
   onActiveWeaponChange?: (weaponId: WeaponId | null) => void;
+  onShieldChange?: (shield: ActiveShieldState | null) => void;
 }
 
 export class Game {
@@ -67,7 +69,15 @@ export class Game {
 
     // 5. Default Planet (Earth)
     const defaultPlanetConfig = PLANET_PRESETS.find((p) => p.id === 'earth') || PLANET_PRESETS[0];
-    this.planet = new Planet(defaultPlanetConfig, this.sceneManager.sunLight.position);
+    this.planet = new Planet(defaultPlanetConfig, this.sceneManager.sunLight.position, (state) => {
+      this.callbacks.onShieldChange?.(state);
+    });
+    this.planet.setShieldContext({
+      scene: this.sceneManager.scene,
+      particleSystem: this.particleSystem,
+      audioManager: this.audioManager,
+      cameraController: this.cameraController,
+    });
     this.sceneManager.scene.add(this.planet.group);
     this.cameraController.setPlanetRadius(defaultPlanetConfig.radius);
     this.hookPlanetCallbacks();
@@ -189,7 +199,15 @@ export class Game {
     this.shockwaveSystem.clear();
 
     // Instantiate new planet
-    this.planet = new Planet(newConfig, this.sceneManager.sunLight.position);
+    this.planet = new Planet(newConfig, this.sceneManager.sunLight.position, (state) => {
+      this.callbacks.onShieldChange?.(state);
+    });
+    this.planet.setShieldContext({
+      scene: this.sceneManager.scene,
+      particleSystem: this.particleSystem,
+      audioManager: this.audioManager,
+      cameraController: this.cameraController,
+    });
     this.planet.isRotationPaused = this.isRotationPaused;
     this.planet.setCloudsVisible(this.isCloudsVisible);
     this.sceneManager.scene.add(this.planet.group);
@@ -200,6 +218,14 @@ export class Game {
     this.wasDestroyed = false;
 
     this.audioManager.playReset();
+  }
+
+  public deployShield(type: ShieldType): void {
+    this.planet.deployShield(type);
+  }
+
+  public removeShield(): void {
+    this.planet.removeShield();
   }
 
   private hookPlanetCallbacks(): void {

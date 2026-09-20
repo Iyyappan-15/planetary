@@ -13,6 +13,8 @@ import { PlanetIntegrity, GameSettings } from './types/game';
 import { loadStoredSettings, saveStoredSettings } from './utils/storage';
 import './styles/hud.css';
 
+import { ShieldType, ActiveShieldState } from './types/shield';
+
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gameRef = useRef<Game | null>(null);
@@ -21,6 +23,7 @@ export const App: React.FC = () => {
   const [settings, setSettings] = useState<GameSettings>(loadStoredSettings());
   const [activePlanet, setActivePlanet] = useState<PlanetConfig>(PLANET_PRESETS[0]);
   const [activeWeaponId, setActiveWeaponId] = useState<WeaponId | null>('nuclear_missile');
+  const [activeShield, setActiveShield] = useState<ActiveShieldState | null>(null);
   const [isRotationPaused, setIsRotationPaused] = useState<boolean>(false);
   const [integrity, setIntegrity] = useState<PlanetIntegrity>({
     currentHp: 100,
@@ -51,6 +54,7 @@ export const App: React.FC = () => {
       onIntegrityChange: (integ) => setIntegrity(integ),
       onTargetChange: (target) => setTargetInfo(target),
       onActiveWeaponChange: (wId) => setActiveWeaponId(wId),
+      onShieldChange: (shield) => setActiveShield(shield),
     });
 
     gameRef.current = game;
@@ -77,6 +81,16 @@ export const App: React.FC = () => {
 
   const handleResetPlanet = useCallback(() => {
     gameRef.current?.resetPlanet();
+    setActiveShield(null);
+  }, []);
+
+  const handleDeployShield = useCallback((type: ShieldType) => {
+    gameRef.current?.deployShield(type);
+  }, []);
+
+  const handleRemoveShield = useCallback(() => {
+    gameRef.current?.removeShield();
+    setActiveShield(null);
   }, []);
 
   const [isCloudsVisible, setIsCloudsVisible] = useState<boolean>(true);
@@ -174,6 +188,9 @@ export const App: React.FC = () => {
           isCloudsVisible={isCloudsVisible}
           onToggleClouds={handleToggleClouds}
           onSelectWeapon={handleSelectWeapon}
+          activeShield={activeShield}
+          onDeployShield={handleDeployShield}
+          onRemoveShield={handleRemoveShield}
           onOpenPlanetSelector={() => setIsPlanetSelectorOpen(true)}
           onOpenSatelliteMap={() => setIsSatelliteMapOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}

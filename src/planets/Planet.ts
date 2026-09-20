@@ -8,6 +8,8 @@ import { CloudLayer } from './CloudLayer';
 import { DamageSystem } from './DamageSystem';
 import { FractureSystem } from './FractureSystem';
 import { PopulationSystem } from './PopulationSystem';
+import { ShieldSystem, ShieldContext } from './ShieldSystem';
+import { ShieldType, ActiveShieldState } from '../types/shield';
 import { disposeNode } from '../utils/disposal';
 
 export class Planet {
@@ -21,6 +23,9 @@ export class Planet {
   public damageSystem: DamageSystem;
   public fractureSystem: FractureSystem;
   public populationSystem: PopulationSystem;
+  public shieldSystem: ShieldSystem;
+  public shieldContext: ShieldContext | null = null;
+  private onShieldStateChange?: (state: ActiveShieldState | null) => void;
 
   private material: PlanetMaterial;
   private surfaceTexture: THREE.Texture;
@@ -32,15 +37,17 @@ export class Planet {
   public isDestroyed: boolean = false;
   public isRotationPaused: boolean = false;
 
-  constructor(config: PlanetConfig, sunDirection: THREE.Vector3) {
+  constructor(config: PlanetConfig, sunDirection: THREE.Vector3, onShieldChange?: (state: ActiveShieldState | null) => void) {
     this.config = config;
     this.group = new THREE.Group();
+    this.onShieldStateChange = onShieldChange;
 
-    // 1. Initialize Damage, Fracture, and Population systems
+    // 1. Initialize Damage, Fracture, Population, and Shield systems
     this.damageSystem = new DamageSystem(1024, 512);
     this.fractureSystem = new FractureSystem(config.radius, config.destruction.coreColor);
     this.group.add(this.fractureSystem.group);
     this.populationSystem = new PopulationSystem(config.id, config.initialPopulation);
+    this.shieldSystem = new ShieldSystem(config.radius, (state) => this.onShieldStateChange?.(state));
 
     const isEarth = config.id === 'earth';
 
@@ -207,7 +214,32 @@ export class Planet {
     this.group.add(this.ringMesh);
   }
 
+  public setShieldContext(context: ShieldContext): void {
+    this.shieldContext = context;
+  }
+
+  public deployShield(type: ShieldType): void {
+    if (this.shieldContext) {
+      this.shieldSystem.deploy(type, this.shieldContext);
+    }
+  }
+
+  public removeShield(): void {
+    if (this.shieldContext) {
+      this.shieldSystem.remove(this.shieldContext.scene);
+    }
+  }
+
   public registerImpact(impact: ImpactData): void {
+    // 1. If planetary shield is active, it intercepts the hit and absorbs damage
+    if (this.shieldSystem.isActive && this.shieldContext) {
+      const absorbed = this.shieldSystem.absorbImpact(impact, this.shieldContext);
+      if (absorbed) {
+        // Shield successfully deflected the attack: 0 crust damage, 0 population casualties!
+        return;
+      }
+    }
+
     this.damageSystem.registerImpact(impact);
     this.populationSystem.registerImpactCasualties(impact, false);
 
@@ -228,6 +260,7 @@ export class Planet {
     if (this.clouds) this.clouds.setVisible(false);
     if (this.atmosphere) this.atmosphere.setVisible(false);
     if (this.ringMesh) this.ringMesh.visible = false;
+    if (this.shieldContext) this.shieldSystem.remove(this.shieldContext.scene);
     this.populationSystem.registerImpactCasualties({} as ImpactData, true);
     this.fractureSystem.triggerBreakup(epicenter);
   }
@@ -245,6 +278,8 @@ export class Planet {
         this.atmosphere.update(delta, sunDirection);
       }
     }
+
+    this.shieldSystem.update(delta);
 
     this.material.updateSunDirection(sunDirection);
     if (this.ringMaterial) {
@@ -272,6 +307,10 @@ export class Planet {
     if (this.atmosphere) this.atmosphere.setVisible(true);
     if (this.ringMesh) this.ringMesh.visible = true;
 
+    if (this.shieldContext) {
+      this.shieldSystem.remove(this.shieldContext.scene);
+    }
+
     this.damageSystem.reset();
     this.fractureSystem.reset();
     this.populationSystem.reset();
@@ -290,6 +329,9 @@ export class Planet {
   }
 
   public dispose(): void {
+    if (this.shieldContext) {
+      this.shieldSystem.dispose(this.shieldContext.scene);
+    }
     this.damageSystem.dispose();
     this.fractureSystem.dispose();
     if (this.atmosphere) this.atmosphere.dispose();
