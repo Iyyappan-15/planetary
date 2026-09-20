@@ -388,6 +388,20 @@ export class ProceduralTextures {
           t = (noise.fbm2D(nx * 2.2, ny * 2.2 + nz * 2.2, 5, 2.0, 0.5) + 1.0) * 0.5;
           const veins = Math.abs(noise.noise3D(nx * 6.0, ny * 6.0, nz * 6.0));
           accent = veins < 0.12 ? 1 - veins / 0.12 : 0;
+        } else if (profile.type === 'star') {
+          // Photospheric granulation cells (turbulent convective plasma)
+          const gran1 = noise.fbm2D(nx * 12.0, ny * 12.0 + nz * 12.0, 4, 2.0, 0.5);
+          const gran2 = noise.noise3D(nx * 24.0, ny * 24.0, nz * 24.0);
+          t = (gran1 * 0.65 + gran2 * 0.35 + 1.0) * 0.5;
+
+          // Prominent magnetic sunspots (cooling convective umbra)
+          const spot1 = Math.hypot(nx - 0.35, ny - 0.15, nz - 0.55);
+          const spot2 = Math.hypot(nx + 0.45, ny + 0.25, nz + 0.35);
+          const spot3 = Math.hypot(nx - 0.1, ny + 0.4, nz - 0.6);
+          const minSpot = Math.min(spot1, spot2, spot3);
+          if (minSpot < 0.18) {
+            accent = 1.0 - minSpot / 0.18;
+          }
         } else {
           // Rocky desert (Mars), Ice world, or Oceanic
           t = (noise.fbm2D(nx * 2.5, ny * 2.5 + nz * 2.5, 5, 2.0, 0.5) + 1.0) * 0.5;
@@ -399,7 +413,17 @@ export class ProceduralTextures {
         }
 
         let finalCol = colA.clone().lerp(colB, t);
-        if (accent > 0) {
+        if (profile.type === 'star') {
+          // Incandescent white hot convective centers
+          if (t > 0.6) {
+            finalCol.lerp(new THREE.Color('#ffffff'), (t - 0.6) * 1.5);
+          }
+          // Dark magnetic sunspot umbras
+          if (accent > 0) {
+            const sunspotColor = new THREE.Color('#380e03');
+            finalCol.lerp(sunspotColor, Math.pow(accent, 1.4));
+          }
+        } else if (accent > 0) {
           finalCol.lerp(colAccent, accent);
         }
 
@@ -420,9 +444,9 @@ export class ProceduralTextures {
   }
 
   /**
-   * Concentric ring texture (e.g. for Saturn)
+   * Concentric ring texture based on NASA Cassini-Huygens spectral imaging (e.g. for Saturn)
    */
-  public static createRingTexture(width: number = 512, height: number = 64): THREE.CanvasTexture {
+  public static createRingTexture(width: number = 1024, height: number = 64): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -431,24 +455,62 @@ export class ProceduralTextures {
     const data = imgData.data;
 
     for (let x = 0; x < width; x++) {
-      const u = x / width;
-      let opacity = Math.sin(u * Math.PI) * 0.85;
-      if (u > 0.58 && u < 0.65) {
-        opacity *= 0.1; // Cassini division
-      }
-      opacity *= 0.7 + 0.3 * Math.sin(u * 120.0);
+      const u = x / width; // Radial coordinate from inner to outer edge
+      let r = 245;
+      let g = 230;
+      let b = 200;
+      let alpha = 0.0;
 
-      const r = Math.floor((190 + Math.sin(u * 10) * 30) * 0.95);
-      const g = Math.floor((175 + Math.sin(u * 10) * 25) * 0.95);
-      const b = Math.floor((140 + Math.sin(u * 10) * 20) * 0.95);
-      const a = Math.floor(Math.max(0, Math.min(255, opacity * 255)));
+      // Fine harmonic micro-ring density variations
+      const fineGrooves = 0.86 + 0.14 * Math.sin(u * 280.0) * Math.sin(u * 71.0);
+      const densityWave = 0.92 + 0.08 * Math.sin(u * 62.0);
+
+      if (u < 0.08) {
+        // D Ring: Faint inner dust veil
+        alpha = (u / 0.08) * 0.3;
+        r = 190; g = 170; b = 145;
+      } else if (u < 0.28) {
+        // C Ring (Crepe Ring): Translucent warm amber-gray
+        const cu = (u - 0.08) / 0.20;
+        alpha = (0.42 + 0.25 * Math.sin(cu * Math.PI)) * fineGrooves;
+        r = Math.floor(215 * densityWave);
+        g = Math.floor(198 * densityWave);
+        b = Math.floor(168 * densityWave);
+      } else if (u < 0.65) {
+        // B Ring: The densest, most brilliant, shimmering gold-cream ring
+        const bu = (u - 0.28) / 0.37;
+        alpha = (0.92 + 0.08 * Math.sin(bu * 12.0)) * fineGrooves;
+        r = Math.floor(252 * densityWave);
+        g = Math.floor(238 * densityWave);
+        b = Math.floor(210 * densityWave);
+      } else if (u < 0.72) {
+        // Cassini Division: Prominent dark gap
+        const gapU = (u - 0.65) / 0.07;
+        alpha = 0.04 + 0.06 * Math.sin(gapU * Math.PI);
+        r = 120; g = 110; b = 95;
+      } else if (u < 0.96) {
+        // A Ring: Silvery-golden outer ring with Encke Gap
+        const au = (u - 0.72) / 0.24;
+        const encke = Math.abs(u - 0.865) < 0.012 ? 0.08 : 1.0;
+        alpha = (0.84 + 0.12 * Math.sin(au * 8.0)) * fineGrooves * encke;
+        r = Math.floor(240 * densityWave);
+        g = Math.floor(226 * densityWave);
+        b = Math.floor(202 * densityWave);
+      } else {
+        // F Ring: Delicate outer thread
+        const fu = (u - 0.96) / 0.04;
+        alpha = Math.sin(fu * Math.PI) * 0.75;
+        r = 250; g = 235; b = 215;
+      }
+
+      const finalAlpha = Math.floor(Math.max(0, Math.min(255, alpha * 255)));
 
       for (let y = 0; y < height; y++) {
         const idx = (y * width + x) * 4;
         data[idx] = r;
         data[idx + 1] = g;
         data[idx + 2] = b;
-        data[idx + 3] = a;
+        data[idx + 3] = finalAlpha;
       }
     }
 
@@ -456,6 +518,7 @@ export class ProceduralTextures {
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.ClampToEdgeWrapping;
     texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
     return texture;
   }
 }

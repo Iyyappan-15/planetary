@@ -9,6 +9,7 @@ export interface PlanetMaterialOptions {
   sunDirection: THREE.Vector3;
   coreColor?: string;
   hasOcean?: boolean;
+  isStar?: boolean;
 }
 
 export class PlanetMaterial extends THREE.ShaderMaterial {
@@ -44,6 +45,7 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
       uniform float uHasOcean;
       uniform float uHasNightLights;
       uniform float uHasNormalMap;
+      uniform float uIsStar;
 
       varying vec2 vUv;
       varying vec3 vNormal;
@@ -77,6 +79,30 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
         vec3 sunDir = normalize(uSunDirection);
         vec3 normal = normalize(vWorldNormal);
         vec3 viewDir = normalize(cameraPosition - vWorldPosition);
+
+        // STAR / SUN RENDERING: Self-luminous thermonuclear body
+        if (uIsStar > 0.5) {
+          float mu = max(dot(normal, viewDir), 0.0);
+          // Solar limb darkening (hot core center, cooler amber limb)
+          float limbDarkening = 0.38 + 0.62 * pow(mu, 0.6);
+
+          // Impact damage on the Sun appears as magnetic sunspots (cooling convective umbra)
+          vec3 sunspotCol = vec3(0.14, 0.02, 0.01);
+          vec3 starRgb = mix(gradedRgb * 1.4, sunspotCol, scorchFactor);
+          vec3 starDiffuse = starRgb * limbDarkening;
+
+          // Incandescent flare plasma around magnetic sunspot rims
+          if (damage.g > 0.05) {
+            starDiffuse += vec3(1.0, 0.88, 0.5) * damage.g * 1.6;
+          }
+
+          // Coronal rim glow around solar horizon
+          float coronaRim = pow(1.0 - mu, 2.6);
+          starDiffuse += vec3(1.0, 0.55, 0.1) * coronaRim * 1.8;
+
+          gl_FragColor = vec4(starDiffuse, 1.0);
+          return;
+        }
 
         // Topographic normal map perturbation for realistic mountain ridges & elevation
         if (uHasNormalMap > 0.5) {
@@ -145,6 +171,7 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
         uHasOcean: { value: options.hasOcean ? 1.0 : 0.0 },
         uHasNightLights: { value: options.nightMap ? 1.0 : 0.0 },
         uHasNormalMap: { value: options.normalMap ? 1.0 : 0.0 },
+        uIsStar: { value: options.isStar ? 1.0 : 0.0 },
       },
     });
   }

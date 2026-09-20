@@ -31,6 +31,7 @@ export class Atmosphere {
       uniform float uGlowIntensity;
       uniform float uDisturbance;
       uniform vec3 uSunDirection;
+      uniform float uIsStar;
 
       varying vec3 vNormal;
       varying vec3 vWorldNormal;
@@ -43,6 +44,14 @@ export class Atmosphere {
         // Rayleigh exponential rim falloff
         float rim = 1.0 - max(dot(normal, viewDir), 0.0);
         rim = pow(rim, 3.8);
+
+        // Solar Corona Halo: 360-degree omnidirectional stellar halo
+        if (uIsStar > 0.5) {
+          float coronaAlpha = clamp(rim * uDensity * uGlowIntensity * 1.2, 0.0, 0.96);
+          vec3 coronaCol = mix(uColor, vec3(1.0, 0.94, 0.75), rim * 0.6);
+          gl_FragColor = vec4(coronaCol, coronaAlpha);
+          return;
+        }
 
         // Sunlight factor: illuminated horizon
         float sunDot = dot(normal, normalize(uSunDirection));
@@ -72,6 +81,7 @@ export class Atmosphere {
         uGlowIntensity: { value: profile.glowIntensity },
         uDisturbance: { value: 0 },
         uSunDirection: { value: sunDirection.clone() },
+        uIsStar: { value: profile.isStar ? 1.0 : 0.0 },
       },
       blending: THREE.AdditiveBlending,
       side: THREE.FrontSide,

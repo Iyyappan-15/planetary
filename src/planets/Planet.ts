@@ -85,6 +85,7 @@ export class Planet {
       sunDirection,
       coreColor: config.destruction.coreColor,
       hasOcean: config.surface.hasOcean,
+      isStar: config.isStar || config.surface.type === 'star',
     });
 
     this.surfaceMesh = new THREE.Mesh(sphereGeo, this.material);
@@ -104,28 +105,105 @@ export class Planet {
 
     // 6. Create Planetary Rings if configured (e.g. Saturn)
     if (config.rings?.enabled) {
-      this.createRings(config.rings);
+      this.createRings(config.rings, sunDirection);
     }
   }
 
-  private createRings(ringConfig: NonNullable<PlanetConfig['rings']>): void {
-    const geometry = new THREE.RingGeometry(ringConfig.innerRadius, ringConfig.outerRadius, 64);
-    // Rotate geometry to horizontal plane
+  private ringMaterial: THREE.ShaderMaterial | null = null;
+
+  private createRings(ringConfig: NonNullable<PlanetConfig['rings']>, sunDirection: THREE.Vector3): void {
+    // High-polygon ring geometry with theta and radial subdivisions
+    const geometry = new THREE.RingGeometry(ringConfig.innerRadius, ringConfig.outerRadius, 128, 8);
+
+    // Recompute UV coordinates so that 'u' is radial distance from inner to outer edge
+    // This allows the concentric ring texture to map perfectly in circles without planar distortion
+    const posAttr = geometry.attributes.position;
+    const uvAttr = geometry.attributes.uv;
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i);
+      const y = posAttr.getY(i);
+      const r = Math.hypot(x, y);
+      const u = (r - ringConfig.innerRadius) / (ringConfig.outerRadius - ringConfig.innerRadius);
+      const theta = Math.atan2(y, x);
+      const v = theta / (Math.PI * 2) + 0.5;
+      uvAttr.setXY(i, u, v);
+    }
+    uvAttr.needsUpdate = true;
+
+    // Rotate geometry to horizontal orbital plane
     geometry.rotateX(-Math.PI / 2);
 
-    this.ringTexture = ProceduralTextures.createRingTexture(512, 64);
-    const material = new THREE.MeshStandardMaterial({
-      map: this.ringTexture,
+    this.ringTexture = ProceduralTextures.createRingTexture(1024, 64);
+
+    // Dedicated Saturn Ring shader with luminous two-sided forward/back scattering and planetary shadow
+    this.ringMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        tRing: { value: this.ringTexture },
+        uSunDirection: { value: sunDirection.clone() },
+        uOpacity: { value: ringConfig.opacity },
+        uPlanetRadius: { value: this.config.radius },
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        varying vec3 vWorldNormal;
+        varying vec3 vWorldPos;
+
+        void main() {
+          vUv = uv;
+          vec4 worldPos = modelMatrix * vec4(position, 1.0);
+          vWorldPos = worldPos.xyz;
+          vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+          gl_Position = projectionMatrix * viewMatrix * worldPos;
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tRing;
+        uniform vec3 uSunDirection;
+        uniform float uOpacity;
+        uniform float uPlanetRadius;
+
+        varying vec2 vUv;
+        varying vec3 vWorldNormal;
+        varying vec3 vWorldPos;
+
+        void main() {
+          vec4 ringSample = texture2D(tRing, vec2(vUv.x, 0.5));
+          if (ringSample.a < 0.01) discard;
+
+          vec3 sunDir = normalize(uSunDirection);
+          vec3 normal = normalize(vWorldNormal);
+
+          // Bilateral light transmission: icy ring particles scatter intensely from both sides
+          float nDotL = abs(dot(normal, sunDir));
+          float illum = 0.52 + 0.48 * nDotL;
+
+          // Planetary shadow: Saturn casts a cylindrical shadow away from the sun onto the rings
+          float proj = dot(vWorldPos, -sunDir);
+          if (proj > 0.0) {
+            vec3 shadowAxisPoint = -sunDir * proj;
+            float distFromAxis = length(vWorldPos - shadowAxisPoint);
+            if (distFromAxis < uPlanetRadius * 1.04) {
+              float penumbra = smoothstep(uPlanetRadius * 0.94, uPlanetRadius * 1.04, distFromAxis);
+              illum *= (0.12 + 0.88 * penumbra);
+            }
+          }
+
+          // Rich, brilliant golden-ice radiance
+          vec3 col = ringSample.rgb * illum * 1.3;
+          float alpha = ringSample.a * uOpacity;
+
+          gl_FragColor = vec4(col, alpha);
+        }
+      `,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: ringConfig.opacity,
-      roughness: 0.9,
-      metalness: 0.05,
+      depthWrite: false,
     });
 
-    this.ringMesh = new THREE.Mesh(geometry, material);
-    // Subtle tilt for realism
-    this.ringMesh.rotation.z = 0.45;
+    this.ringMesh = new THREE.Mesh(geometry, this.ringMaterial);
+    // Real Saturn axial tilt (~26.7 degrees)
+    this.ringMesh.rotation.z = 0.466;
+    this.ringMesh.rotation.x = 0.12;
     this.group.add(this.ringMesh);
   }
 
@@ -149,6 +227,7 @@ export class Planet {
     this.surfaceMesh.visible = false;
     if (this.clouds) this.clouds.setVisible(false);
     if (this.atmosphere) this.atmosphere.setVisible(false);
+    if (this.ringMesh) this.ringMesh.visible = false;
     this.populationSystem.registerImpactCasualties({} as ImpactData, true);
     this.fractureSystem.triggerBreakup(epicenter);
   }
@@ -168,6 +247,9 @@ export class Planet {
     }
 
     this.material.updateSunDirection(sunDirection);
+    if (this.ringMaterial) {
+      this.ringMaterial.uniforms.uSunDirection.value.copy(sunDirection);
+    }
     this.fractureSystem.update(delta, gravityWellPos);
   }
 
@@ -188,6 +270,7 @@ export class Planet {
     this.surfaceMesh.visible = true;
     if (this.clouds) this.clouds.setVisible(true);
     if (this.atmosphere) this.atmosphere.setVisible(true);
+    if (this.ringMesh) this.ringMesh.visible = true;
 
     this.damageSystem.reset();
     this.fractureSystem.reset();
@@ -212,6 +295,7 @@ export class Planet {
     if (this.atmosphere) this.atmosphere.dispose();
     if (this.clouds) this.clouds.dispose();
     if (this.ringMesh) disposeNode(this.ringMesh);
+    if (this.ringMaterial) this.ringMaterial.dispose();
 
     this.surfaceTexture.dispose();
     if (this.normalTexture) this.normalTexture.dispose();

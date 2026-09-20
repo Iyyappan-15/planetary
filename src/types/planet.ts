@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export type PlanetCategory = 'solar_tier1' | 'solar_tier2' | 'fictional';
-export type SurfaceType = 'earth_like' | 'rocky_desert' | 'gas_giant' | 'ice_world' | 'volcanic' | 'oceanic';
+export type SurfaceType = 'earth_like' | 'rocky_desert' | 'gas_giant' | 'ice_world' | 'volcanic' | 'oceanic' | 'star';
 
 export interface SurfaceProfile {
   type: SurfaceType;
@@ -24,6 +24,7 @@ export interface AtmosphereProfile {
   density: number;
   glowIntensity: number;
   rimPower: number;
+  isStar?: boolean;
 }
 
 export interface CloudProfile {
@@ -58,6 +59,7 @@ export interface PlanetConfig {
   description: string;
   radius: number;
   rotationSpeed: number;
+  isStar?: boolean;
   surface: SurfaceProfile;
   atmosphere: AtmosphereProfile;
   clouds?: CloudProfile;

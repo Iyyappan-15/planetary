@@ -3,6 +3,39 @@ import { PlanetConfig } from '../types/planet';
 export const PLANET_PRESETS: PlanetConfig[] = [
   // ================= TIER 1: SHOWCASE & CORE =================
   {
+    id: 'sun',
+    name: 'Sun',
+    category: 'solar_tier1',
+    tagline: 'Heart of the Solar System',
+    description: 'Blazing G-type main-sequence star composed of turbulent hydrogen-helium thermonuclear plasma, churning convective granulation, and towering solar flares.',
+    radius: 3.6,
+    rotationSpeed: 0.015,
+    isStar: true,
+    surface: {
+      type: 'star',
+      primaryColor: '#ff7700',
+      secondaryColor: '#ffbb00',
+      accentColor: '#ffffff',
+      roughness: 0.1,
+      metalness: 0.0,
+      seed: 777,
+    },
+    atmosphere: {
+      enabled: true,
+      color: '#ff9900',
+      density: 1.8,
+      glowIntensity: 2.2,
+      rimPower: 1.4,
+      isStar: true,
+    },
+    destruction: {
+      resistance: 3.0,
+      coreColor: '#ffffff',
+      chunkCount: 36,
+    },
+    initialPopulation: 0,
+  },
+  {
     id: 'earth',
     name: 'Earth',
     category: 'solar_tier1',
@@ -101,7 +134,7 @@ export const PLANET_PRESETS: PlanetConfig[] = [
       rimPower: 2.0,
     },
     destruction: {
-      resistance: 1.8,
+      resistance: 2.0,
       coreColor: '#ff2200',
       chunkCount: 24,
     },
@@ -132,10 +165,10 @@ export const PLANET_PRESETS: PlanetConfig[] = [
     },
     rings: {
       enabled: true,
-      innerRadius: 3.6,
-      outerRadius: 6.2,
-      color: '#d6c498',
-      opacity: 0.9,
+      innerRadius: 3.4,
+      outerRadius: 6.8,
+      color: '#f6ecdc',
+      opacity: 0.96,
     },
     destruction: {
       resistance: 1.6,
