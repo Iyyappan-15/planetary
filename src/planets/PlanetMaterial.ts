@@ -5,6 +5,7 @@ export interface PlanetMaterialOptions {
   normalMap?: THREE.Texture | null;
   specularMap?: THREE.Texture | null;
   nightMap?: THREE.Texture | null;
+  cloudMap?: THREE.Texture | null;
   damageMap: THREE.Texture;
   sunDirection: THREE.Vector3;
   coreColor?: string;
@@ -38,6 +39,7 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
       uniform sampler2D tNormal;
       uniform sampler2D tSpecular;
       uniform sampler2D tNight;
+      uniform sampler2D tClouds;
       uniform sampler2D tDamage;
 
       uniform vec3 uSunDirection;
@@ -45,6 +47,7 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
       uniform float uHasOcean;
       uniform float uHasNightLights;
       uniform float uHasNormalMap;
+      uniform float uHasClouds;
       uniform float uIsStar;
 
       varying vec2 vUv;
@@ -54,33 +57,21 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
       varying vec3 vViewPosition;
 
       void main() {
-        // Base surface color
+        // Base satellite surface color
         vec4 surfaceColor = texture2D(tSurface, vUv);
-
-        // Google Earth style color grading: boost continental contrast and saturation
         vec3 rawRgb = surfaceColor.rgb;
-        // Contrast enhancement
-        vec3 gradedRgb = mix(rawRgb, rawRgb * rawRgb * (3.0 - 2.0 * rawRgb), 0.28);
-        // Vibrance: enrich greens and blues
-        float maxC = max(gradedRgb.r, max(gradedRgb.g, gradedRgb.b));
-        float minC = min(gradedRgb.r, min(gradedRgb.g, gradedRgb.b));
-        float sat = (maxC - minC) / (maxC + 0.001);
-        gradedRgb = mix(gradedRgb, gradedRgb * 1.15, (1.0 - sat) * 0.25);
 
         // Sample damage map:
         // R = crater depth, G = scorch/charring, B = molten core heat
         vec4 damage = texture2D(tDamage, vUv);
-
-        // Apply scorch & charring: burns the surface dark
         float scorchFactor = clamp(damage.g * 1.5, 0.0, 0.92);
-        vec3 scorchedColor = mix(gradedRgb, vec3(0.04, 0.03, 0.03), scorchFactor);
 
         // World normal & view direction
         vec3 sunDir = normalize(uSunDirection);
         vec3 normal = normalize(vWorldNormal);
         vec3 viewDir = normalize(cameraPosition - vWorldPosition);
 
-        // STAR / SUN RENDERING: Self-luminous thermonuclear body
+        // ================= STAR / SUN RENDERING =================
         if (uIsStar > 0.5) {
           float mu = max(dot(normal, viewDir), 0.0);
           // Solar limb darkening (hot core center, cooler amber limb)
@@ -88,7 +79,7 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
 
           // Impact damage on the Sun appears as magnetic sunspots (cooling convective umbra)
           vec3 sunspotCol = vec3(0.14, 0.02, 0.01);
-          vec3 starRgb = mix(gradedRgb * 1.4, sunspotCol, scorchFactor);
+          vec3 starRgb = mix(rawRgb * 1.4, sunspotCol, scorchFactor);
           vec3 starDiffuse = starRgb * limbDarkening;
 
           // Incandescent flare plasma around magnetic sunspot rims
@@ -104,6 +95,30 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
           return;
         }
 
+        // ================= REAL GOOGLE EARTH COLOR GRADING =================
+        if (uHasOcean > 0.5) {
+          float oceanMask = texture2D(tSpecular, vUv).r;
+          if (oceanMask > 0.28) {
+            // Google Earth royal sapphire ocean with turquoise shallow coastal shelves
+            float shelfDepth = smoothstep(0.28, 0.70, oceanMask);
+            vec3 deepOcean = vec3(0.04, 0.22, 0.48);
+            vec3 shallowOcean = vec3(0.08, 0.44, 0.58);
+            vec3 googleOcean = mix(shallowOcean, deepOcean, shelfDepth);
+            rawRgb = mix(rawRgb, googleOcean, 0.82);
+          } else {
+            // Continents: Boost lush green vegetation (India, SE Asia, Europe)
+            float greenMask = max(0.0, rawRgb.g - max(rawRgb.r, rawRgb.b) * 0.86);
+            rawRgb += vec3(-0.04, 0.15, -0.02) * greenMask * 1.25;
+
+            // Desert sand warmth (Sahara, Arabia, Thar Desert)
+            float desertMask = max(0.0, (rawRgb.r + rawRgb.g) * 0.5 - rawRgb.b);
+            rawRgb += vec3(0.07, 0.05, 0.0) * desertMask * 0.42;
+          }
+        }
+
+        // Film-grade contrast & tone curve
+        vec3 gradedRgb = mix(rawRgb, rawRgb * rawRgb * (3.0 - 2.0 * rawRgb), 0.22);
+
         // Topographic normal map perturbation for realistic mountain ridges & elevation
         if (uHasNormalMap > 0.5) {
           vec3 nTex = texture2D(tNormal, vUv).xyz * 2.0 - 1.0;
@@ -114,39 +129,50 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
           normal = normalize(tangent * nTex.x * 0.6 + bitangent * nTex.y * 0.6 + normal * nTex.z);
         }
 
-        // Lighting calculation (day / night terminator)
+        // Apply weapon damage scorch & charring
+        vec3 scorchedColor = mix(gradedRgb, vec3(0.04, 0.03, 0.03), scorchFactor);
+
+        // Subtle cloud shadow cast onto the terrain below
+        if (uHasClouds > 0.5) {
+          vec2 cloudUv = vUv - normalize(sunDir).xy * 0.003;
+          float cloudCover = texture2D(tClouds, cloudUv).r;
+          scorchedColor *= (1.0 - cloudCover * 0.38);
+        }
+
+        // ================= GOOGLE EARTH DAYLIGHT ILLUMINATION =================
         float NdotL = dot(normal, sunDir);
-        float dayFactor = smoothstep(-0.15, 0.22, NdotL);
+        float dayFactor = smoothstep(-0.25, 0.35, NdotL);
         float nightFactor = 1.0 - dayFactor;
 
-        // Diffuse lighting with realistic day-to-night falloff
-        vec3 diffuse = scorchedColor * (0.08 + 0.96 * dayFactor);
+        // Rich daylight diffuse baseline: Earth reflects abundant ambient light
+        vec3 diffuse = scorchedColor * (0.16 + 0.84 * dayFactor);
 
-        // Specular ocean glint: sharp, realistic sun reflection on water (suppressed on scorched crater)
+        // Specular ocean sun glint: sharp, realistic sun reflection on water
         if (uHasOcean > 0.5) {
           float specMask = texture2D(tSpecular, vUv).r * (1.0 - scorchFactor);
-          if (specMask > 0.35) {
+          if (specMask > 0.28) {
             vec3 halfVector = normalize(sunDir + viewDir);
             float NdotH = max(dot(normal, halfVector), 0.0);
-            float specular = pow(NdotH, 96.0) * specMask * dayFactor * 0.65;
-            diffuse += vec3(1.0, 0.97, 0.90) * specular;
+            float specular = pow(NdotH, 64.0) * specMask * dayFactor * 0.75;
+            diffuse += vec3(1.0, 0.98, 0.92) * specular;
           }
         }
 
-        // Google Earth Rayleigh atmospheric limb haze on surface horizon
+        // Google Earth Rayleigh atmospheric limb haze on planetary horizon
         float rim = 1.0 - max(dot(normalize(vWorldNormal), viewDir), 0.0);
-        float limbHaze = pow(rim, 3.2) * dayFactor * 0.42;
-        vec3 hazeColor = vec3(0.28, 0.65, 1.0);
-        diffuse = mix(diffuse, hazeColor, limbHaze * (uHasOcean > 0.5 ? 0.85 : 0.45));
+        float limbHaze = pow(rim, 3.4) * 0.65;
+        vec3 hazeColor = vec3(0.35, 0.72, 1.0);
+        diffuse = mix(diffuse, hazeColor, limbHaze * (0.35 + 0.65 * dayFactor));
 
-        // Night side city lights (only on dark hemisphere and where not scorched)
+        // Subtle warm golden city lights on dark limb (never purple or blinding)
         if (uHasNightLights > 0.5) {
           vec3 nightLights = texture2D(tNight, vUv).rgb;
+          vec3 warmCity = nightLights * vec3(1.0, 0.85, 0.50);
           float lightMask = nightFactor * (1.0 - scorchFactor);
-          diffuse += nightLights * lightMask * 2.2;
+          diffuse += warmCity * lightMask * 0.65;
         }
 
-        // Realistic subtle warm ember glow inside crater center (clean & natural, no blinding glare)
+        // Realistic warm ember glow inside crater center
         float heat = clamp(damage.b, 0.0, 1.0);
         if (heat > 0.1) {
           vec3 magmaOrange = vec3(1.0, 0.38, 0.08);
@@ -165,12 +191,14 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
         tNormal: { value: options.normalMap || new THREE.Texture() },
         tSpecular: { value: options.specularMap || new THREE.Texture() },
         tNight: { value: options.nightMap || new THREE.Texture() },
+        tClouds: { value: options.cloudMap || new THREE.Texture() },
         tDamage: { value: options.damageMap },
         uSunDirection: { value: options.sunDirection.clone() },
         uCoreColor: { value: new THREE.Color(options.coreColor || '#ff4500') },
         uHasOcean: { value: options.hasOcean ? 1.0 : 0.0 },
         uHasNightLights: { value: options.nightMap ? 1.0 : 0.0 },
         uHasNormalMap: { value: options.normalMap ? 1.0 : 0.0 },
+        uHasClouds: { value: options.cloudMap ? 1.0 : 0.0 },
         uIsStar: { value: options.isStar ? 1.0 : 0.0 },
       },
     });

@@ -10,11 +10,11 @@ export class CameraController {
   private minRadius: number = 2.8;
   private maxRadius: number = 18.0;
 
-  private currentTheta: number = 0.5; // Azimuthal angle
-  private targetTheta: number = 0.5;
+  private currentTheta: number = -1.386; // Azimuthal angle centered on India (lon 79.4E)
+  private targetTheta: number = -1.386;
 
-  private currentPhi: number = Math.PI / 2.3; // Polar angle
-  private targetPhi: number = Math.PI / 2.3;
+  private currentPhi: number = 1.232; // Polar angle centered on lat 19.4N
+  private targetPhi: number = 1.232;
   private minPhi: number = 0.05;
   private maxPhi: number = Math.PI - 0.05;
 
@@ -74,8 +74,8 @@ export class CameraController {
   }
 
   public handleWheel(deltaY: number): void {
-    const zoomSpeed = 0.0018 * this.sensitivity * this.targetRadius;
-    this.targetRadius = clamp(this.targetRadius + deltaY * zoomSpeed, this.minRadius, this.maxRadius);
+    const zoomFactor = deltaY * 0.005 * this.sensitivity;
+    this.targetRadius = clamp(this.targetRadius + zoomFactor, this.minRadius, this.maxRadius);
   }
 
   public addTrauma(amount: number): void {
@@ -85,8 +85,8 @@ export class CameraController {
 
   public resetCamera(): void {
     this.targetRadius = 7.0;
-    this.targetTheta = 0.5;
-    this.targetPhi = Math.PI / 2.3;
+    this.targetTheta = -1.386;
+    this.targetPhi = 1.232;
   }
 
   public setPlanetRadius(radius: number): void {

@@ -74,13 +74,20 @@ export class Planet {
       }
     }
 
-    // 3. Create Planet Surface Mesh
+    // 3. Create Cloud Layer if configured (so texture is available for surface cloud shadows)
+    if (config.clouds?.enabled) {
+      this.clouds = new CloudLayer(config.radius, config.clouds, isEarth, sunDirection);
+      this.group.add(this.clouds.mesh);
+    }
+
+    // 4. Create Planet Surface Mesh
     const sphereGeo = new THREE.SphereGeometry(config.radius, 64, 64);
     this.material = new PlanetMaterial({
       surfaceMap: this.surfaceTexture,
       normalMap: this.normalTexture,
       specularMap: this.specularTexture,
       nightMap: this.nightTexture,
+      cloudMap: this.clouds ? this.clouds.texture : null,
       damageMap: this.damageSystem.damageTexture,
       sunDirection,
       coreColor: config.destruction.coreColor,
@@ -91,16 +98,10 @@ export class Planet {
     this.surfaceMesh = new THREE.Mesh(sphereGeo, this.material);
     this.group.add(this.surfaceMesh);
 
-    // 4. Create Atmosphere if enabled
+    // 5. Create Atmosphere if enabled
     if (config.atmosphere.enabled) {
       this.atmosphere = new Atmosphere(config.radius, config.atmosphere, sunDirection);
       this.group.add(this.atmosphere.mesh);
-    }
-
-    // 5. Create Cloud Layer if configured
-    if (config.clouds?.enabled) {
-      this.clouds = new CloudLayer(config.radius, config.clouds, isEarth);
-      this.group.add(this.clouds.mesh);
     }
 
     // 6. Create Planetary Rings if configured (e.g. Saturn)
@@ -238,7 +239,7 @@ export class Planet {
       if (!this.isRotationPaused) {
         this.surfaceMesh.rotation.y += this.config.rotationSpeed * delta;
         if (this.clouds) {
-          this.clouds.update(delta);
+          this.clouds.update(delta, sunDirection);
         }
       }
       if (this.atmosphere) {

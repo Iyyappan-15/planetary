@@ -140,6 +140,20 @@ export class Game {
 
     // Update sub-systems
     this.cameraController.update(delta);
+
+    // Dynamic Google Earth daylight illumination: keeps the visible hemisphere in clear, natural sunlight
+    if (!this.planet.config.isStar) {
+      const camPos = this.cameraController.camera.position.clone().normalize();
+      const up = new THREE.Vector3(0, 1, 0);
+      const right = new THREE.Vector3().crossVectors(camPos, up).normalize();
+      const sunDir = camPos
+        .clone()
+        .addScaledVector(right, -0.38)
+        .addScaledVector(up, 0.42)
+        .normalize();
+      this.sceneManager.sunLight.position.copy(sunDir).multiplyScalar(30);
+    }
+
     this.planet.update(delta, this.sceneManager.sunLight.position, gravPos);
     this.weaponManager.update(delta, context);
     this.shockwaveSystem.update(delta);
