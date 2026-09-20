@@ -9,7 +9,6 @@ export type WeaponId =
   | 'antimatter_bomb'
   | 'stealth_bomber'
   | 'drilling_torpedo'
-  | 'kinetic_rods'
   | 'tectonic_disruptor'
   // Lasers & Energy
   | 'continuous_laser'
@@ -18,7 +17,6 @@ export type WeaponId =
   | 'laser_blade'
   | 'lightning_storm'
   | 'solar_mirror'
-  | 'cryo_bomb'
   // Celestial & Spacial
   | 'meteor_shower'
   | 'giant_asteroid'
@@ -26,7 +24,6 @@ export type WeaponId =
   | 'black_hole'
   | 'space_tear'
   | 'solar_flare'
-  | 'neutron_star'
   // Alien Technology
   | 'alien_ufo'
   | 'planet_destroyer'
@@ -42,7 +39,6 @@ export type WeaponId =
   | 'abyssal_devourer'
   | 'cosmic_dragon'
   | 'celestial_sword'
-  | 'titan_stomp'
   // Aliases for compatibility
   | 'meteor'
   | 'orbital_laser'

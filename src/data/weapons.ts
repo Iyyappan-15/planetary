@@ -104,16 +104,6 @@ export const WEAPON_DEFINITIONS: WeaponConfig[] = [
     damageIntensity: 1.1,
   },
   {
-    id: 'kinetic_rods',
-    name: 'Kinetic Rods',
-    category: 'explosives',
-    description: 'Orbital platform fires solid dense tungsten harpoons at Mach 10, delivering pure kinetic bunker-busting devastation.',
-    cooldownMs: 1200,
-    iconName: 'ChevronsDown',
-    damageRadius: 0.08,
-    damageIntensity: 1.1,
-  },
-  {
     id: 'tectonic_disruptor',
     name: 'Tectonic Disruptor',
     category: 'explosives',
@@ -191,16 +181,6 @@ export const WEAPON_DEFINITIONS: WeaponConfig[] = [
     damageRadius: 0.13,
     damageIntensity: 1.25,
   },
-  {
-    id: 'cryo_bomb',
-    name: 'Cryo Freeze Bomb',
-    category: 'lasers',
-    description: 'Absolute-zero warhead that detonates in the atmosphere, creating an expanding frost wave that glazes continents in ice.',
-    cooldownMs: 1900,
-    iconName: 'Snowflake',
-    damageRadius: 0.15,
-    damageIntensity: 0.85,
-  },
 
   // 🪐 Category 3: Celestial
   {
@@ -262,16 +242,6 @@ export const WEAPON_DEFINITIONS: WeaponConfig[] = [
     iconName: 'Flame',
     damageRadius: 0.26,
     damageIntensity: 1.7,
-  },
-  {
-    id: 'neutron_star',
-    name: 'Neutron Star',
-    category: 'celestial',
-    description: 'Hyper-dense city-sized neutron star sweeps in close flyby, tearing off crust with extreme tidal gravity and pulsar jets.',
-    cooldownMs: 3400,
-    iconName: 'Radio',
-    damageRadius: 0.28,
-    damageIntensity: 2.4,
   },
 
   // 🛸 Category 4: Alien Technology
@@ -406,15 +376,5 @@ export const WEAPON_DEFINITIONS: WeaponConfig[] = [
     iconName: 'Sword',
     damageRadius: 0.18,
     damageIntensity: 1.8,
-  },
-  {
-    id: 'titan_stomp',
-    name: 'Titan Stomp',
-    category: 'monsters',
-    description: 'Gargantuan cosmic deity foot emerging from orbital clouds to deliver an earth-shattering stomp that flattens continental crust.',
-    cooldownMs: 2500,
-    iconName: 'Footprints',
-    damageRadius: 0.22,
-    damageIntensity: 1.7,
   },
 ];

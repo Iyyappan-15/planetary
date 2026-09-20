@@ -9,7 +9,6 @@ import { ClusterMissilesWeapon } from './explosive/ClusterMissiles';
 import { AntimatterBombWeapon } from './explosive/AntimatterBomb';
 import { StealthBomberWeapon } from './explosive/StealthBomber';
 import { DrillingTorpedoWeapon } from './explosive/DrillingTorpedo';
-import { KineticRodsWeapon } from './explosive/KineticRods';
 import { TectonicDisruptorWeapon } from './explosive/TectonicDisruptor';
 
 // Lasers & Energy
@@ -19,7 +18,6 @@ import { PlasmaCannonWeapon } from './energy/PlasmaCannon';
 import { LaserBladeWeapon } from './energy/LaserBlade';
 import { LightningStormWeapon } from './energy/LightningStorm';
 import { SolarMirrorWeapon } from './energy/SolarMirror';
-import { CryoBombWeapon } from './energy/CryoBomb';
 
 // Celestial
 import { MeteorShowerWeapon } from './kinetic/MeteorShower';
@@ -28,7 +26,6 @@ import { MoonfallWeapon } from './kinetic/Moonfall';
 import { MiniBlackHoleWeapon } from './cosmic/MiniBlackHole';
 import { SpaceTearWeapon } from './cosmic/SpaceTear';
 import { SolarFlareWeapon } from './kinetic/SolarFlare';
-import { NeutronStarWeapon } from './cosmic/NeutronStar';
 
 // Alien Technology
 import { AlienUFOWeapon } from './alien/AlienUFO';
@@ -46,7 +43,6 @@ import { CelestialPunchWeapon } from './monsters/CelestialPunch';
 import { AbyssalDevourerWeapon } from './monsters/AbyssalDevourer';
 import { CosmicDragonWeapon } from './monsters/CosmicDragon';
 import { CelestialSwordWeapon } from './monsters/CelestialSword';
-import { TitanStompWeapon } from './monsters/TitanStomp';
 
 import { disposeNode } from '../utils/disposal';
 
@@ -68,7 +64,6 @@ export class WeaponManager {
     const antimatterBomb = new AntimatterBombWeapon();
     const stealthBomber = new StealthBomberWeapon();
     const drillingTorpedo = new DrillingTorpedoWeapon();
-    const kineticRods = new KineticRodsWeapon();
     const tectonicDisruptor = new TectonicDisruptorWeapon();
 
     const continuousLaser = new ContinuousLaserWeapon();
@@ -77,7 +72,6 @@ export class WeaponManager {
     const laserBlade = new LaserBladeWeapon();
     const lightningStorm = new LightningStormWeapon();
     const solarMirror = new SolarMirrorWeapon();
-    const cryoBomb = new CryoBombWeapon();
 
     const meteorShower = new MeteorShowerWeapon();
     const giantAsteroid = new GiantAsteroidWeapon();
@@ -85,7 +79,6 @@ export class WeaponManager {
     const blackHole = new MiniBlackHoleWeapon();
     const spaceTear = new SpaceTearWeapon();
     const solarFlare = new SolarFlareWeapon();
-    const neutronStar = new NeutronStarWeapon();
 
     const alienUfo = new AlienUFOWeapon();
     const planetDestroyer = new PlanetDestroyerWeapon();
@@ -101,7 +94,6 @@ export class WeaponManager {
     const abyssalDevourer = new AbyssalDevourerWeapon();
     const cosmicDragon = new CosmicDragonWeapon();
     const celestialSword = new CelestialSwordWeapon();
-    const titanStomp = new TitanStompWeapon();
 
     // Register primary arsenal
     this.registerWeapon(nuclearMissile);
@@ -109,7 +101,6 @@ export class WeaponManager {
     this.registerWeapon(antimatterBomb);
     this.registerWeapon(stealthBomber);
     this.registerWeapon(drillingTorpedo);
-    this.registerWeapon(kineticRods);
     this.registerWeapon(tectonicDisruptor);
 
     this.registerWeapon(continuousLaser);
@@ -118,7 +109,6 @@ export class WeaponManager {
     this.registerWeapon(laserBlade);
     this.registerWeapon(lightningStorm);
     this.registerWeapon(solarMirror);
-    this.registerWeapon(cryoBomb);
 
     this.registerWeapon(meteorShower);
     this.registerWeapon(giantAsteroid);
@@ -126,7 +116,6 @@ export class WeaponManager {
     this.registerWeapon(blackHole);
     this.registerWeapon(spaceTear);
     this.registerWeapon(solarFlare);
-    this.registerWeapon(neutronStar);
 
     this.registerWeapon(alienUfo);
     this.registerWeapon(planetDestroyer);
@@ -142,7 +131,6 @@ export class WeaponManager {
     this.registerWeapon(abyssalDevourer);
     this.registerWeapon(cosmicDragon);
     this.registerWeapon(celestialSword);
-    this.registerWeapon(titanStomp);
 
     // Compatibility aliases
     this.weapons.set('meteor', meteorShower);
