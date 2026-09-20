@@ -58,6 +58,8 @@ export interface TargetInfo {
   lat: number;
   lon: number;
   distance: number;
+  targetType?: 'planet' | 'moon';
+  targetMesh?: THREE.Object3D;
 }
 
 export interface WeaponConfig {

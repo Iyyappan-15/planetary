@@ -14,6 +14,7 @@ interface ActiveMissile {
   progress: number;
   speed: number;
   midArcPos: THREE.Vector3;
+  targetType?: 'planet' | 'moon';
 }
 
 export class NuclearMissileWeapon extends Weapon {
@@ -108,6 +109,7 @@ export class NuclearMissileWeapon extends Weapon {
       progress: 0,
       speed: 0.55, // Flight time ~1.8s
       midArcPos: midPos,
+      targetType: target.targetType,
     });
 
     context.audioManager.playMissileLaunch();
@@ -126,17 +128,17 @@ export class NuclearMissileWeapon extends Weapon {
         continue;
       }
 
-      // Quadratic bezier curve along ballistic trajectory
+      // Quadratic bezier curve flight path
       const t = missile.progress;
-      const invT = 1.0 - t;
+      const invT = 1 - t;
       const currentPos = new THREE.Vector3()
         .addScaledVector(missile.startPos, invT * invT)
         .addScaledVector(missile.midArcPos, 2 * invT * t)
         .addScaledVector(missile.targetPos, t * t);
 
-      // Tangent vector for missile orientation
+      // Orientation tangent vector (look slightly ahead on the curve)
       const nextT = Math.min(1.0, t + 0.04);
-      const invNextT = 1.0 - nextT;
+      const invNextT = 1 - nextT;
       const nextPos = new THREE.Vector3()
         .addScaledVector(missile.startPos, invNextT * invNextT)
         .addScaledVector(missile.midArcPos, 2 * invNextT * nextT)
@@ -160,7 +162,7 @@ export class NuclearMissileWeapon extends Weapon {
   }
 
   private onImpact(missile: ActiveMissile, context: WeaponContext): void {
-    // 1. Planetary damage crater
+    // 1. Damage crater
     context.planet.registerImpact({
       u: missile.targetUV.u,
       v: missile.targetUV.v,
@@ -171,13 +173,17 @@ export class NuclearMissileWeapon extends Weapon {
       intensity: this.config.damageIntensity,
       heat: 0.95,
       timestamp: performance.now(),
+      targetType: missile.targetType,
     });
+
+    const isMoon = missile.targetType === 'moon' || (missile.targetPos && missile.targetPos.length() > context.planet.config.radius * 1.35);
+    const shockwaveR = isMoon ? 0.52 * 1.2 : context.planet.config.radius * 0.55;
 
     // 2. Shockwave ring
     context.shockwaveSystem.create(
       missile.targetPos,
       missile.targetNormal,
-      context.planet.config.radius * 0.55,
+      shockwaveR,
       '#ffeedd'
     );
 

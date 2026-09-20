@@ -200,7 +200,7 @@ export class WeaponManager {
     if (!context.planet.isDestroyed) {
       targetables.push(context.planet.surfaceMesh);
     }
-    if (context.moonMesh && context.moonMesh.visible) {
+    if (context.moonMesh && context.moonMesh.visible && context.moonSystem?.state !== 'destroyed') {
       targetables.push(context.moonMesh);
     }
 
@@ -215,9 +215,15 @@ export class WeaponManager {
     if (intersects.length > 0) {
       const hit = intersects[0];
       const point = hit.point.clone();
-      const normal = hit.normal ? hit.normal.clone() : point.clone().normalize();
-
       const isMoonHit = Boolean(context.moonMesh && hit.object === context.moonMesh);
+
+      let normal: THREE.Vector3;
+      if (isMoonHit && context.moonMesh) {
+        normal = point.clone().sub(context.moonMesh.position).normalize();
+      } else {
+        normal = hit.normal ? hit.normal.clone() : point.clone().normalize();
+      }
+
       const localPoint = point.clone();
       if (isMoonHit && context.moonMesh) {
         context.moonMesh.worldToLocal(localPoint);
@@ -234,6 +240,8 @@ export class WeaponManager {
         lat,
         lon,
         distance: hit.distance,
+        targetType: isMoonHit ? 'moon' : 'planet',
+        targetMesh: hit.object,
       };
 
       // Position reticle just above the surface aligned with surface normal if a weapon is selected
@@ -242,8 +250,9 @@ export class WeaponManager {
         this.targetMarker.position.copy(point).addScaledVector(normal, 0.02);
         this.targetMarker.lookAt(point.clone().add(normal));
 
-        // Pulse reticle
-        const s = 1.0 + Math.sin(performance.now() * 0.008) * 0.15;
+        // Pulse reticle: scale down to 0.45 when aiming at the Moon (radius 0.52 vs Earth 2.2)
+        const baseScale = isMoonHit ? 0.45 : 1.0;
+        const s = baseScale * (1.0 + Math.sin(performance.now() * 0.008) * 0.15);
         this.targetMarker.scale.set(s, s, s);
       } else {
         this.targetMarker.visible = false;
@@ -258,7 +267,9 @@ export class WeaponManager {
   }
 
   public fire(context: WeaponContext): boolean {
-    if (!this.currentTarget || context.planet.isDestroyed) return false;
+    if (!this.currentTarget) return false;
+    if (this.currentTarget.targetType === 'planet' && context.planet.isDestroyed) return false;
+    if (this.currentTarget.targetType === 'moon' && context.moonSystem?.state === 'destroyed') return false;
 
     const weapon = this.getActiveWeapon();
     if (weapon && weapon.canFire()) {
@@ -283,12 +294,16 @@ export class WeaponManager {
   public update(delta: number, context: WeaponContext): void {
     const active = this.getActiveWeapon();
 
+    const isTargetValid = this.currentTarget &&
+      ((this.currentTarget.targetType === 'moon' && context.moonSystem?.state !== 'destroyed') ||
+       (this.currentTarget.targetType !== 'moon' && !context.planet.isDestroyed));
+
     // If holding down trigger on a weapon that requires hold or can rapid fire
-    if (active && this.isHoldingTrigger && this.currentTarget && !context.planet.isDestroyed) {
+    if (active && this.isHoldingTrigger && isTargetValid) {
       if (active.config.requiresHold) {
-        active.execute(this.currentTarget, context);
+        active.execute(this.currentTarget!, context);
       } else if (active.canFire()) {
-        active.execute(this.currentTarget, context);
+        active.execute(this.currentTarget!, context);
       }
     }
 

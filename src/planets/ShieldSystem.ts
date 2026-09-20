@@ -5,11 +5,13 @@ import { ImpactData } from '../types/planet';
 import { ParticleSystem } from '../effects/ParticleSystem';
 import { AudioManager } from '../audio/AudioManager';
 import { CameraController } from '../renderer/CameraController';
+import { ShockwaveSystem } from '../effects/Shockwave';
 import { disposeNode } from '../utils/disposal';
 
 export interface ShieldContext {
   scene: THREE.Scene;
   particleSystem: ParticleSystem;
+  shockwaveSystem?: ShockwaveSystem;
   audioManager: AudioManager;
   cameraController: CameraController;
 }

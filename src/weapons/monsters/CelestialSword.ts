@@ -9,6 +9,11 @@ interface ActiveSword {
   portalGroup: THREE.Group;
   bladeAura: THREE.Mesh;
   flightDir: THREE.Vector3; // Direction from entry through center to exit
+  targetCenter: THREE.Vector3;
+  scaleFactor: number;
+  swordTipOffset: number;
+  swordPommelOffset: number;
+  isMoon: boolean;
   entryPos: THREE.Vector3;
   entryNormal: THREE.Vector3;
   entryUV: { u: number; v: number };
@@ -213,41 +218,52 @@ export class CelestialSwordWeapon extends Weapon {
     if (!this.canFire()) return;
     this.lastFiredTime = performance.now();
 
-    const planetRadius = context.planet.config.radius;
-    const entryPos = target.point.clone();
-    const entryNormal = target.normal ? target.normal.clone() : entryPos.clone().normalize();
+    const isMoon = target.targetType === 'moon' || Boolean(context.moonMesh && target.point.distanceTo(context.moonMesh.position) < 1.0);
+    const targetCenter = isMoon && context.moonMesh ? context.moonMesh.position.clone() : new THREE.Vector3();
+    const planetRadius = isMoon ? 0.52 : context.planet.config.radius;
+    const scaleFactor = isMoon ? 0.32 : 1.0;
+    const swordTipOffset = 6.2 * scaleFactor;
+    const swordPommelOffset = 2.0 * scaleFactor;
 
-    // Flight direction points straight into the planet through the center towards the antipode
+    const entryPos = target.point.clone();
+    const entryNormal = target.normal ? target.normal.clone() : entryPos.clone().sub(targetCenter).normalize();
+
+    // Flight direction points straight into the celestial body through its center towards the antipode
     const flightDir = entryNormal.clone().negate().normalize();
 
-    // Antipodal Exit coordinates on the opposite side of the planet
-    const exitPos = entryPos.clone().negate();
+    // Antipodal Exit coordinates on the opposite side of the planet or Moon
+    const exitPos = targetCenter.clone().addScaledVector(entryNormal, -planetRadius);
     const exitNormal = entryNormal.clone().negate();
 
     // Compute exact UV and lat/lon on the opposite side
     const exitLocal = exitPos.clone();
-    context.planet.surfaceMesh.worldToLocal(exitLocal);
+    if (isMoon && context.moonMesh) {
+      context.moonMesh.worldToLocal(exitLocal);
+    } else {
+      context.planet.surfaceMesh.worldToLocal(exitLocal);
+    }
     const exitUV = vector3ToUV(exitLocal);
     const { lat: exitLat, lon: exitLon } = vector3ToLatLon(exitLocal);
 
-    // Initial sword position far out in deep space along entry axis
-    const spawnDist = planetRadius + 18.0;
-    const portalPos = entryPos.clone().addScaledVector(entryNormal, 18.0);
+    // Initial sword position along entry axis
+    const spawnDist = isMoon ? (planetRadius + 6.0) : (planetRadius + 18.0);
+    const portalPos = targetCenter.clone().addScaledVector(entryNormal, spawnDist);
 
     // Create portal at spawn location
     const portalGroup = this.createPortalMesh();
+    portalGroup.scale.set(scaleFactor, scaleFactor, scaleFactor);
     portalGroup.position.copy(portalPos);
     portalGroup.lookAt(entryPos);
     context.scene.add(portalGroup);
 
     // Create the sword
     const { group, bladeAura } = this.createSwordMesh();
+    group.scale.set(scaleFactor, scaleFactor, scaleFactor);
     // Align sword so that its local +Z (pointing toward tip) faces flightDir
     group.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), flightDir);
 
     // Place sword initially so its tip is at the portal
-    // Since tip is at +6.2 along local Z, group origin is 6.2 units behind tip
-    const initialGroupPos = portalPos.clone().addScaledVector(flightDir, -6.2);
+    const initialGroupPos = portalPos.clone().addScaledVector(flightDir, -swordTipOffset);
     group.position.copy(initialGroupPos);
     context.scene.add(group);
 
@@ -256,6 +272,11 @@ export class CelestialSwordWeapon extends Weapon {
       portalGroup,
       bladeAura,
       flightDir,
+      targetCenter,
+      scaleFactor,
+      swordTipOffset,
+      swordPommelOffset,
+      isMoon,
       entryPos,
       entryNormal,
       entryUV: { ...target.uv },
@@ -268,7 +289,7 @@ export class CelestialSwordWeapon extends Weapon {
       exitLon,
       planetRadius,
       timer: 0,
-      totalDuration: 3.4,
+      totalDuration: isMoon ? 2.4 : 3.4,
       hasHitEntry: false,
       hasHitExit: false,
       pulseTimer: 0,
@@ -294,31 +315,31 @@ export class CelestialSwordWeapon extends Weapon {
       s.bladeAura.scale.z = 1.08 + vibe * 2.0;
 
       // -------------------------------------------------------------
-      // TRAJECTORY: Tip moves from (-R - 18.0) to (+R + 18.0) along flightDir
-      // Where 0 is the center of the planet.
+      // TRAJECTORY: Tip moves from (-R - spawnOffset) to (+R + spawnOffset) along flightDir
+      // Where 0 is the center of the target (targetCenter).
       // -R is the entry surface!
       // +R is the exit surface!
       // -------------------------------------------------------------
       const R = s.planetRadius;
-      const startTipDist = -R - 18.0;
-      const endTipDist = R + 18.0;
+      const spawnOffset = s.isMoon ? 6.0 : 18.0;
+      const startTipDist = -R - spawnOffset;
+      const endTipDist = R + spawnOffset;
 
       // Smooth majestic motion: rapid plunge with smooth acceleration
-      // Cubic easing for realistic gravitational acceleration
       const easeT = progress < 0.5 
         ? 2 * progress * progress 
         : 1 - Math.pow(-2 * progress + 2, 2) / 2;
 
       const currentTipDist = startTipDist + (endTipDist - startTipDist) * easeT;
 
-      // Group position is 6.2 units behind the tip
-      const currentGroupDist = currentTipDist - 6.2;
-      s.group.position.copy(s.flightDir).multiplyScalar(currentGroupDist);
+      // Group position is swordTipOffset units behind the tip
+      const currentGroupDist = currentTipDist - s.swordTipOffset;
+      s.group.position.copy(s.targetCenter).addScaledVector(s.flightDir, currentGroupDist);
 
       // Tip world position
-      const tipPos = s.group.position.clone().addScaledVector(s.flightDir, 6.2);
+      const tipPos = s.group.position.clone().addScaledVector(s.flightDir, s.swordTipOffset);
       // Pommel world position
-      const pommelPos = s.group.position.clone().addScaledVector(s.flightDir, -2.0);
+      const pommelPos = s.group.position.clone().addScaledVector(s.flightDir, -s.swordPommelOffset);
 
       // Trailing stardust wake behind the sword
       context.particleSystem.emit(
@@ -453,18 +474,23 @@ export class CelestialSwordWeapon extends Weapon {
    * Cataclysmic entry impact on the targeted hemisphere.
    */
   private triggerEntryImpact(s: ActiveSword, context: WeaponContext): void {
-    // 1. Crater & fracture on entry side
-    context.planet.registerImpact({
-      u: s.entryUV.u,
-      v: s.entryUV.v,
-      lat: s.entryLat,
-      lon: s.entryLon,
-      position: s.entryPos,
-      radius: this.config.damageRadius,
-      intensity: this.config.damageIntensity,
-      heat: 1.0,
-      timestamp: performance.now(),
-    });
+    if (s.isMoon) {
+      if (context.moonSystem) {
+        context.moonSystem.registerImpact(s.entryPos, this.config.damageIntensity, this.config.damageRadius, context);
+      }
+    } else {
+      context.planet.registerImpact({
+        u: s.entryUV.u,
+        v: s.entryUV.v,
+        lat: s.entryLat,
+        lon: s.entryLon,
+        position: s.entryPos,
+        radius: this.config.damageRadius,
+        intensity: this.config.damageIntensity,
+        heat: 1.0,
+        timestamp: performance.now(),
+      });
+    }
 
     const R = s.planetRadius;
 
@@ -487,18 +513,23 @@ export class CelestialSwordWeapon extends Weapon {
    * Cataclysmic breakthrough blowout on the OPPOSITE hemisphere.
    */
   private triggerExitImpact(s: ActiveSword, context: WeaponContext): void {
-    // 1. Crater & fracture on exit side
-    context.planet.registerImpact({
-      u: s.exitUV.u,
-      v: s.exitUV.v,
-      lat: s.exitLat,
-      lon: s.exitLon,
-      position: s.exitPos,
-      radius: this.config.damageRadius * 0.9,
-      intensity: this.config.damageIntensity * 0.85,
-      heat: 1.0,
-      timestamp: performance.now(),
-    });
+    if (s.isMoon) {
+      if (context.moonSystem) {
+        context.moonSystem.registerImpact(s.exitPos, this.config.damageIntensity * 0.85, this.config.damageRadius * 0.9, context);
+      }
+    } else {
+      context.planet.registerImpact({
+        u: s.exitUV.u,
+        v: s.exitUV.v,
+        lat: s.exitLat,
+        lon: s.exitLon,
+        position: s.exitPos,
+        radius: this.config.damageRadius * 0.9,
+        intensity: this.config.damageIntensity * 0.85,
+        heat: 1.0,
+        timestamp: performance.now(),
+      });
+    }
 
     const R = s.planetRadius;
 

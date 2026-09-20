@@ -31,6 +31,16 @@ export class MoonSystem {
   public orbitSpeed: number = 0.15; // Radians per second
   public inclination: number = 0.09; // ~5.14 degrees tilt
 
+  public isPaused: boolean = false;
+  public health: number = 100;
+  public maxHealth: number = 100;
+
+  // Dynamic procedural texture canvas for interactive lunar craters
+  private canvas!: HTMLCanvasElement;
+  private ctx!: CanvasRenderingContext2D;
+  private pristineCanvas!: HTMLCanvasElement;
+  private moonTex!: THREE.CanvasTexture;
+
   // Dynamic physics state
   private velocity: THREE.Vector3 = new THREE.Vector3();
   private reEntryFlames: THREE.Mesh | null = null;
@@ -45,11 +55,11 @@ export class MoonSystem {
     this.group.add(this.orbitRing);
 
     // 2. Procedural Cratered Lunar Texture & Mesh
-    const moonTex = this.generateLunarTexture();
+    this.moonTex = this.generateLunarTexture();
     const moonBump = this.generateLunarBump();
     const moonGeo = new THREE.SphereGeometry(this.radius, 48, 48);
     const moonMat = new THREE.MeshStandardMaterial({
-      map: moonTex,
+      map: this.moonTex,
       bumpMap: moonBump,
       bumpScale: 0.04,
       roughness: 0.92,
@@ -70,10 +80,12 @@ export class MoonSystem {
    * Generates a photorealistic procedural lunar texture with dark basalt maria and bright cratered highlands.
    */
   private generateLunarTexture(): THREE.CanvasTexture {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d')!;
+    this.canvas = document.createElement('canvas');
+    this.canvas.width = 1024;
+    this.canvas.height = 512;
+    this.ctx = this.canvas.getContext('2d')!;
+    const canvas = this.canvas;
+    const ctx = this.ctx;
 
     // Base highland regolith tone
     ctx.fillStyle = '#b0b0b4';
@@ -134,6 +146,12 @@ export class MoonSystem {
         ctx.fill();
       }
     }
+
+    // Save backup pristine texture for resetPlanet()
+    this.pristineCanvas = document.createElement('canvas');
+    this.pristineCanvas.width = canvas.width;
+    this.pristineCanvas.height = canvas.height;
+    this.pristineCanvas.getContext('2d')!.drawImage(canvas, 0, 0);
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = THREE.RepeatWrapping;
@@ -273,6 +291,7 @@ export class MoonSystem {
   public reset(): void {
     this.state = 'orbiting';
     this.currentAngle = 0;
+    this.health = this.maxHealth;
     this.moonMesh.visible = true;
     this.orbitRing.visible = true;
     this.velocity.set(0, 0, 0);
@@ -288,6 +307,13 @@ export class MoonSystem {
     }
     this.debrisPieces = [];
 
+    // Restore pristine uncratered surface texture
+    if (this.canvas && this.pristineCanvas && this.ctx && this.moonTex) {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      this.ctx.drawImage(this.pristineCanvas, 0, 0);
+      this.moonTex.needsUpdate = true;
+    }
+
     this.updateOrbitalPosition();
   }
 
@@ -301,11 +327,13 @@ export class MoonSystem {
     // STATE 1: ORBITING
     // -------------------------------------------------------------
     if (this.state === 'orbiting') {
-      this.currentAngle += delta * this.orbitSpeed;
-      if (this.currentAngle > Math.PI * 2) {
-        this.currentAngle -= Math.PI * 2;
+      if (!this.isPaused) {
+        this.currentAngle += delta * this.orbitSpeed;
+        if (this.currentAngle > Math.PI * 2) {
+          this.currentAngle -= Math.PI * 2;
+        }
+        this.updateOrbitalPosition();
       }
-      this.updateOrbitalPosition();
     }
 
     // -------------------------------------------------------------
@@ -500,8 +528,189 @@ export class MoonSystem {
     context.audioManager.playNuclearBlast();
   }
 
+  /**
+   * Registers a weapon impact directly onto the Moon's surface,
+   * drawing realistic molten craters and triggering lunar shockwaves.
+   */
+  public registerImpact(
+    hitWorldPos: THREE.Vector3,
+    intensity: number,
+    radius: number,
+    context?: MoonContext | null,
+    impactType: 'blast' | 'freeze' | 'laser' = 'blast'
+  ): void {
+    if (this.state === 'destroyed' || !this.moonMesh.visible) return;
+
+    // Convert world hit coordinates into Moon's local spherical coordinates
+    const localHit = hitWorldPos.clone();
+    this.moonMesh.worldToLocal(localHit);
+    const uv = vector3ToUV(localHit);
+
+    const cx = uv.u * this.canvas.width;
+    const cy = (1.0 - uv.v) * this.canvas.height;
+    const pixelRadius = Math.max(8, Math.min(50, radius * this.canvas.width * 0.45));
+
+    this.ctx.save();
+    if (impactType === 'freeze') {
+      const frost = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, pixelRadius * 1.3);
+      frost.addColorStop(0, 'rgba(215, 245, 255, 0.95)');
+      frost.addColorStop(0.4, 'rgba(130, 210, 255, 0.75)');
+      frost.addColorStop(0.8, 'rgba(60, 160, 240, 0.4)');
+      frost.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      this.ctx.fillStyle = frost;
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy, pixelRadius * 1.3, 0, Math.PI * 2);
+      this.ctx.fill();
+    } else {
+      this.ctx.globalCompositeOperation = 'source-over';
+
+      // 1. Charcoal Basin
+      const basinGrad = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, pixelRadius);
+      basinGrad.addColorStop(0, 'rgba(18, 20, 24, 0.98)');
+      basinGrad.addColorStop(0.4, 'rgba(38, 42, 48, 0.92)');
+      basinGrad.addColorStop(0.75, 'rgba(60, 64, 72, 0.7)');
+      basinGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      this.ctx.fillStyle = basinGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy, pixelRadius, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // 2. Molten thermal magma core
+      const heatGrad = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, pixelRadius * 0.55);
+      heatGrad.addColorStop(0, 'rgba(255, 240, 140, 0.95)');
+      heatGrad.addColorStop(0.35, 'rgba(255, 120, 30, 0.85)');
+      heatGrad.addColorStop(0.7, 'rgba(200, 40, 0, 0.5)');
+      heatGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      this.ctx.fillStyle = heatGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy, pixelRadius * 0.55, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // 3. Bright high-albedo lunar ejecta rim
+      this.ctx.strokeStyle = 'rgba(245, 245, 255, 0.85)';
+      this.ctx.lineWidth = Math.max(1.5, pixelRadius * 0.16);
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy, pixelRadius * 0.9, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Radial ejecta splash rays
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2 + Math.random() * 0.3;
+        const rayLen = pixelRadius * (1.2 + Math.random() * 0.8);
+        this.ctx.strokeStyle = 'rgba(230, 235, 245, 0.45)';
+        this.ctx.lineWidth = Math.max(1, pixelRadius * 0.08);
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx + Math.cos(angle) * pixelRadius * 0.8, cy + Math.sin(angle) * pixelRadius * 0.8);
+        this.ctx.lineTo(cx + Math.cos(angle) * rayLen, cy + Math.sin(angle) * rayLen);
+        this.ctx.stroke();
+      }
+    }
+    this.ctx.restore();
+    this.moonTex.needsUpdate = true;
+
+    const hitNormal = hitWorldPos.clone().sub(this.moonMesh.position).normalize();
+
+    // Spawn Particles & Shockwaves
+    if (context) {
+      if (context.particleSystem) {
+        context.particleSystem.emit(hitWorldPos, hitNormal, 40, '#ff7700', 1.8, 4.2, 1.2, 0.6);
+        context.particleSystem.emit(hitWorldPos, hitNormal, 30, '#ffffff', 1.4, 3.2, 1.0, 0.5);
+      }
+      if (context.shockwaveSystem) {
+        context.shockwaveSystem.create(hitWorldPos, hitNormal, this.radius * 1.8, '#ffffff');
+        context.shockwaveSystem.create(hitWorldPos, hitNormal, this.radius * 2.8, '#ff9900');
+      }
+      if (context.cameraController) {
+        context.cameraController.addTrauma(0.35 * Math.min(1.5, intensity));
+      }
+      if (context.audioManager) {
+        context.audioManager.playMeteorImpact();
+      }
+    }
+
+    // Health damage & shattering
+    this.health -= intensity * 25;
+    if (this.health <= 0) {
+      this.shatter(hitWorldPos, context);
+    }
+  }
+
+  /**
+   * Catastrophic lunar destruction: explodes Moon into orbiting 3D debris field
+   */
+  public shatter(hitWorldPos?: THREE.Vector3, context?: MoonContext | null): void {
+    if (this.state === 'destroyed') return;
+    this.state = 'destroyed';
+    this.moonMesh.visible = false;
+    this.orbitRing.visible = false;
+    if (this.reEntryFlames) {
+      this.reEntryFlames.visible = false;
+    }
+
+    const center = this.moonMesh.position.clone();
+    const hitPoint = hitWorldPos || center;
+    const hitNormal = hitPoint.clone().sub(center).normalize();
+
+    const chunkGeo = new THREE.DodecahedronGeometry(0.12, 0);
+    const chunkMat = new THREE.MeshStandardMaterial({
+      color: 0x99999e,
+      roughness: 0.9,
+      metalness: 0.1,
+    });
+
+    for (let c = 0; c < 24; c++) {
+      const mesh = new THREE.Mesh(chunkGeo, chunkMat);
+      mesh.scale.set(
+        0.4 + Math.random() * 0.7,
+        0.4 + Math.random() * 0.7,
+        0.4 + Math.random() * 0.7
+      );
+      mesh.position.copy(center).add(new THREE.Vector3(
+        (Math.random() - 0.5) * 0.5,
+        (Math.random() - 0.5) * 0.5,
+        (Math.random() - 0.5) * 0.5
+      ));
+
+      const outwardDir = new THREE.Vector3(
+        (Math.random() - 0.5) * 2.0,
+        (Math.random() - 0.5) * 2.0,
+        (Math.random() - 0.5) * 2.0
+      ).normalize();
+
+      const vel = outwardDir.multiplyScalar(3.0 + Math.random() * 6.0);
+      const rotVel = new THREE.Vector3(
+        (Math.random() - 0.5) * 5.0,
+        (Math.random() - 0.5) * 5.0,
+        (Math.random() - 0.5) * 5.0
+      );
+
+      this.debrisGroup.add(mesh);
+      this.debrisPieces.push({ mesh, vel, rotVel });
+    }
+
+    if (context) {
+      if (context.particleSystem) {
+        context.particleSystem.emit(center, hitNormal, 90, '#ff7700', 3.0, 6.0, 2.0, 1.0);
+        context.particleSystem.emit(center, hitNormal, 70, '#ffffff', 2.5, 5.0, 1.8, 0.8);
+      }
+      if (context.shockwaveSystem) {
+        context.shockwaveSystem.create(center, hitNormal, this.radius * 3.5, '#ffffff');
+        context.shockwaveSystem.create(center, hitNormal, this.radius * 5.0, '#ff5500');
+      }
+      if (context.cameraController) {
+        context.cameraController.addTrauma(0.75);
+      }
+      if (context.audioManager) {
+        context.audioManager.playNuclearBlast();
+      }
+    }
+  }
+
   public dispose(): void {
     disposeNode(this.group);
     this.debrisPieces = [];
+    if (this.moonTex) {
+      this.moonTex.dispose();
+    }
   }
 }

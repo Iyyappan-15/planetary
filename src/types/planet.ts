@@ -79,5 +79,6 @@ export interface ImpactData {
   heat: number; // 0..1 molten glow
   timestamp: number;
   type?: 'blast' | 'freeze' | 'laser';
+  targetType?: 'planet' | 'moon';
 }
 

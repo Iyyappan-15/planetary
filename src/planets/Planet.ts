@@ -25,6 +25,7 @@ export class Planet {
   public populationSystem: PopulationSystem;
   public shieldSystem: ShieldSystem;
   public shieldContext: ShieldContext | null = null;
+  public moonSystem: any = null;
   private onShieldStateChange?: (state: ActiveShieldState | null) => void;
 
   private material: PlanetMaterial;
@@ -230,7 +231,35 @@ export class Planet {
     }
   }
 
+  public setMoonSystem(moonSystem: any): void {
+    this.moonSystem = moonSystem;
+  }
+
   public registerImpact(impact: ImpactData): void {
+    // Check if impact targeted the Moon or occurred beyond planet radius
+    const isMoonImpact = impact.targetType === 'moon' ||
+      (impact.position && impact.position.length() > this.config.radius * 1.35);
+
+    if (isMoonImpact) {
+      if (this.moonSystem) {
+        this.moonSystem.registerImpact(
+          impact.position,
+          impact.intensity,
+          impact.radius,
+          this.shieldContext ? {
+            scene: this.shieldContext.scene,
+            planet: this,
+            particleSystem: this.shieldContext.particleSystem,
+            shockwaveSystem: this.shieldContext.shockwaveSystem,
+            cameraController: this.shieldContext.cameraController,
+            audioManager: this.shieldContext.audioManager,
+          } : null,
+          impact.type || 'blast'
+        );
+      }
+      return;
+    }
+
     // 1. If planetary shield is active, it intercepts the hit and absorbs damage
     if (this.shieldSystem.isActive && this.shieldContext) {
       const absorbed = this.shieldSystem.absorbImpact(impact, this.shieldContext);

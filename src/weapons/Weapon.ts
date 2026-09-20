@@ -14,6 +14,7 @@ export interface WeaponContext {
   shockwaveSystem: ShockwaveSystem;
   audioManager: AudioManager;
   moonMesh?: THREE.Mesh | null;
+  moonSystem?: any;
 }
 
 export abstract class Weapon {

@@ -14,6 +14,7 @@ import { GravityWellWeapon } from '../weapons/gravity/GravityWell';
 import { latLonToVector3, vector3ToUV } from '../utils/math';
 import { ShieldType, ActiveShieldState } from '../types/shield';
 import { MoonSystem, MoonState } from '../planets/MoonSystem';
+import { WeaponContext } from '../weapons/Weapon';
 
 export interface GameCallbacks {
   onIntegrityChange?: (integrity: PlanetIntegrity) => void;
@@ -80,6 +81,7 @@ export class Game {
     this.planet.setShieldContext({
       scene: this.sceneManager.scene,
       particleSystem: this.particleSystem,
+      shockwaveSystem: this.shockwaveSystem,
       audioManager: this.audioManager,
       cameraController: this.cameraController,
     });
@@ -107,8 +109,23 @@ export class Game {
       this.moonSystem = null;
     }
     this.moonSystem = new MoonSystem();
+    this.moonSystem.isPaused = this.isRotationPaused;
+    this.planet.setMoonSystem(this.moonSystem);
     this.sceneManager.scene.add(this.moonSystem.group);
     this.callbacks.onMoonStateChange?.(this.moonSystem.state);
+  }
+
+  public getWeaponContext(): WeaponContext {
+    return {
+      scene: this.sceneManager.scene,
+      planet: this.planet,
+      cameraController: this.cameraController,
+      particleSystem: this.particleSystem,
+      shockwaveSystem: this.shockwaveSystem,
+      audioManager: this.audioManager,
+      moonMesh: this.moonSystem?.moonMesh,
+      moonSystem: this.moonSystem,
+    };
   }
 
   public start(): void {
@@ -139,15 +156,7 @@ export class Game {
   };
 
   private update(delta: number): void {
-    const context = {
-      scene: this.sceneManager.scene,
-      planet: this.planet,
-      cameraController: this.cameraController,
-      particleSystem: this.particleSystem,
-      shockwaveSystem: this.shockwaveSystem,
-      audioManager: this.audioManager,
-      moonMesh: this.moonSystem?.moonMesh,
-    };
+    const context = this.getWeaponContext();
 
     // Update targeting if pointer is over canvas
     let target: TargetInfo | null = null;
@@ -240,6 +249,7 @@ export class Game {
     this.planet.setShieldContext({
       scene: this.sceneManager.scene,
       particleSystem: this.particleSystem,
+      shockwaveSystem: this.shockwaveSystem,
       audioManager: this.audioManager,
       cameraController: this.cameraController,
     });
@@ -259,7 +269,10 @@ export class Game {
       this.sceneManager.scene.remove(this.moonSystem.group);
       this.moonSystem.dispose();
       this.moonSystem = null;
+      this.planet.setMoonSystem(null);
       this.callbacks.onMoonStateChange?.(null);
+    } else {
+      this.planet.setMoonSystem(null);
     }
 
     this.audioManager.playReset();
@@ -309,6 +322,9 @@ export class Game {
   public setRotationPaused(paused: boolean): void {
     this.isRotationPaused = paused;
     this.planet.isRotationPaused = paused;
+    if (this.moonSystem) {
+      this.moonSystem.isPaused = paused;
+    }
   }
 
   public setCloudsVisible(visible: boolean): void {
@@ -355,14 +371,7 @@ export class Game {
       distance: this.cameraController.camera.position.distanceTo(worldPoint),
     };
 
-    const context = {
-      scene: this.sceneManager.scene,
-      planet: this.planet,
-      cameraController: this.cameraController,
-      particleSystem: this.particleSystem,
-      shockwaveSystem: this.shockwaveSystem,
-      audioManager: this.audioManager,
-    };
+    const context = this.getWeaponContext();
 
     // Execute weapon strike with cinematic orbital trajectory
     setTimeout(() => {
@@ -446,15 +455,7 @@ export class Game {
 
     canvas.addEventListener('pointerleave', () => {
       this.isPointerOverCanvas = false;
-      const context = {
-        scene: this.sceneManager.scene,
-        planet: this.planet,
-        cameraController: this.cameraController,
-        particleSystem: this.particleSystem,
-        shockwaveSystem: this.shockwaveSystem,
-        audioManager: this.audioManager,
-      };
-      this.weaponManager.stopContinuous(context);
+      this.weaponManager.stopContinuous(this.getWeaponContext());
     });
 
     canvas.addEventListener('pointerdown', (e) => {
@@ -463,15 +464,7 @@ export class Game {
       if (e.button === 0 && !e.shiftKey) {
         // If a weapon is selected and aiming at planet, fire it
         if (this.weaponManager.activeWeaponId && this.weaponManager.currentTarget) {
-          const context = {
-            scene: this.sceneManager.scene,
-            planet: this.planet,
-            cameraController: this.cameraController,
-            particleSystem: this.particleSystem,
-            shockwaveSystem: this.shockwaveSystem,
-            audioManager: this.audioManager,
-          };
-          this.weaponManager.startContinuous(context);
+          this.weaponManager.startContinuous(this.getWeaponContext());
         } else {
           // If no weapon is selected or clicked in empty space, left drag orbits/rotates camera freely!
           this.cameraController.startDrag(e.clientX, e.clientY);
@@ -491,15 +484,7 @@ export class Game {
     window.addEventListener('pointerup', (e) => {
       this.cameraController.stopDrag();
       if (e.button === 0) {
-        const context = {
-          scene: this.sceneManager.scene,
-          planet: this.planet,
-          cameraController: this.cameraController,
-          particleSystem: this.particleSystem,
-          shockwaveSystem: this.shockwaveSystem,
-          audioManager: this.audioManager,
-        };
-        this.weaponManager.stopContinuous(context);
+        this.weaponManager.stopContinuous(this.getWeaponContext());
       }
     });
 
