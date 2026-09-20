@@ -89,7 +89,7 @@ export class AntimatterBombWeapon extends Weapon {
       targetLat: target.lat,
       targetLon: target.lon,
       progress: 0,
-      speed: 1.8,
+      speed: 0.65, // ~1.5s descent with spinning gyroscopic rings
       phase: 'descending',
       armTimer: 0,
     });
@@ -125,7 +125,7 @@ export class AntimatterBombWeapon extends Weapon {
 
         if (bomb.progress >= 1.0) {
           bomb.phase = 'arming';
-          bomb.armTimer = 0.25; // Brief 0.25s pulse before detonation
+          bomb.armTimer = 1.2; // Dramatic 1.2s pulsating countdown before implosion
         }
       } else if (bomb.phase === 'arming') {
         bomb.armTimer -= delta;

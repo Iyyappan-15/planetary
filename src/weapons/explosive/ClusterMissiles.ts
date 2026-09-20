@@ -84,7 +84,7 @@ export class ClusterMissilesWeapon extends Weapon {
         startPos: subStart,
         targetPos: subTargetPoint,
         progress: 0,
-        speed: 1.8 + Math.random() * 0.5, // Slight stagger
+        speed: 0.65 + Math.random() * 0.2, // ~1.5s flight time with natural stagger
       });
     }
 

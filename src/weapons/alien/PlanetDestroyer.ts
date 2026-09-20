@@ -119,30 +119,30 @@ export class PlanetDestroyerWeapon extends Weapon {
 
       if (d.stage === 'charging') {
         // Pulse converging tributary lines
-        const chargeProgress = Math.min(1.0, d.timer / 1.6);
+        const chargeProgress = Math.min(1.0, d.timer / 2.2);
         for (const line of d.tributaryLines) {
-          (line.material as THREE.LineBasicMaterial).opacity = chargeProgress * (0.5 + Math.sin(d.timer * 30.0) * 0.5);
+          (line.material as THREE.LineBasicMaterial).opacity = chargeProgress * (0.5 + Math.sin(d.timer * 20.0) * 0.5);
         }
 
         // Concentrating energy sparks at focus
         context.particleSystem.emit(
           d.satellitePos.clone().addScaledVector(d.targetNormal, -0.2),
           d.targetNormal,
-          2,
+          3,
           '#00ffcc',
           0.2,
-          0.8,
-          0.3,
+          1.0,
+          0.4,
           0.15
         );
 
-        if (d.timer >= 1.7) {
+        if (d.timer >= 2.4) {
           d.stage = 'firing';
           d.timer = 0;
           context.audioManager.playPlanetDestroyerFire();
         }
       } else if (d.stage === 'firing') {
-        const fireProgress = Math.min(1.0, d.timer / 1.4);
+        const fireProgress = Math.min(1.0, d.timer / 3.2);
 
         // Position & scale main beam through the planet center
         const beamDist = d.satellitePos.distanceTo(d.targetPoint) + context.planet.config.radius * 1.8;
@@ -154,22 +154,24 @@ export class PlanetDestroyerWeapon extends Weapon {
         const beamMat = d.mainBeam.material as THREE.MeshBasicMaterial;
         beamMat.opacity = Math.sin(fireProgress * Math.PI) * 0.95;
 
-        // Devastating damage to surface and core
-        context.planet.registerImpact({
-          u: 0.5,
-          v: 0.5,
-          position: d.targetPoint,
-          radius: this.config.damageRadius,
-          intensity: this.config.damageIntensity,
-          heat: 1.0,
-          timestamp: performance.now(),
-        });
+        // Periodic devastating damage to surface and core while beam is alive
+        if (Math.random() < 0.3) {
+          context.planet.registerImpact({
+            u: 0.5,
+            v: 0.5,
+            position: d.targetPoint,
+            radius: this.config.damageRadius,
+            intensity: this.config.damageIntensity * 0.4,
+            heat: 1.0,
+            timestamp: performance.now(),
+          });
+        }
 
         context.shockwaveSystem.create(d.targetPoint, d.targetNormal, context.planet.config.radius * 0.8, '#00ffff');
-        context.particleSystem.emit(d.targetPoint, d.targetNormal, 40, '#00ffcc', 2.5, 6.0, 1.8, 0.9);
-        context.cameraController.addTrauma(0.5);
+        context.particleSystem.emit(d.targetPoint, d.targetNormal, 15, '#00ffcc', 2.0, 5.0, 1.2, 0.7);
+        context.cameraController.addTrauma(0.15);
 
-        if (d.timer >= 1.5) {
+        if (d.timer >= 3.5) {
           d.stage = 'receding';
           d.timer = 0;
           d.mainBeam.visible = false;
@@ -178,8 +180,8 @@ export class PlanetDestroyerWeapon extends Weapon {
           }
         }
       } else if (d.stage === 'receding') {
-        d.satelliteGroup.scale.multiplyScalar(Math.max(0, 1.0 - delta * 2.0));
-        if (d.timer >= 0.8) {
+        d.satelliteGroup.scale.multiplyScalar(Math.max(0, 1.0 - delta * 0.8));
+        if (d.timer >= 1.8) {
           context.scene.remove(d.satelliteGroup);
           disposeNode(d.satelliteGroup);
           this.activeDestroyers.splice(i, 1);

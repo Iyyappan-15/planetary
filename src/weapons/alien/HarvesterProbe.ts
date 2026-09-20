@@ -100,7 +100,7 @@ export class HarvesterProbeWeapon extends Weapon {
       targetPoint: target.point.clone(),
       targetNormal: target.normal.clone(),
       timer: 0,
-      duration: 3.0,
+      duration: 10.0, // Harvests for 10 seconds
     });
 
     context.audioManager.playUiClick();
@@ -110,7 +110,7 @@ export class HarvesterProbeWeapon extends Weapon {
     for (let i = this.activeProbes.length - 1; i >= 0; i--) {
       const p = this.activeProbes[i];
       p.timer += delta;
-      p.group.rotation.y += delta * 3.0;
+      p.group.rotation.y += delta * 2.5;
 
       // Extract energy particles ascending toward the probe
       context.particleSystem.emit(
@@ -125,7 +125,7 @@ export class HarvesterProbeWeapon extends Weapon {
       );
 
       // Periodic damage ticks
-      if (Math.random() < 0.15) {
+      if (Math.random() < 0.08) {
         const local = p.targetPoint.clone();
         context.planet.surfaceMesh.worldToLocal(local);
         const uv = vector3ToUV(local);
@@ -144,7 +144,16 @@ export class HarvesterProbeWeapon extends Weapon {
         });
       }
 
+      // Smooth ascent and warp out in the final 0.8s
+      if (p.timer >= p.duration - 0.8) {
+        p.group.position.addScaledVector(p.targetNormal, delta * 5.0);
+        for (const b of p.beams) {
+          (b.material as THREE.LineBasicMaterial).opacity = Math.max(0, (p.duration - p.timer) / 0.8);
+        }
+      }
+
       if (p.timer >= p.duration) {
+        context.particleSystem.emit(p.group.position, p.targetNormal, 20, '#cc44ff', 1.0, 2.5, 0.6, 0.4);
         context.scene.remove(p.group);
         disposeNode(p.group);
         for (const b of p.beams) {

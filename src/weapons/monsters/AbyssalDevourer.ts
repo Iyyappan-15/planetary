@@ -95,7 +95,7 @@ export class AbyssalDevourerWeapon extends Weapon {
       targetPoint: target.point.clone(),
       targetNormal: target.normal.clone(),
       timer: 0,
-      duration: 3.2,
+      duration: 9.5, // Thrashing portal active for 9.5s
     });
 
     context.audioManager.playTentacleSlam();
@@ -108,13 +108,13 @@ export class AbyssalDevourerWeapon extends Weapon {
 
       // Writhing tentacle animation
       for (const t of portal.tentacles) {
-        const slamCycle = Math.sin(portal.timer * 6.0 + t.angle);
-        t.mesh.rotation.x = Math.sin(portal.timer * 4.0 + t.angle) * 0.7;
-        t.mesh.rotation.z = Math.cos(portal.timer * 4.0 + t.angle) * 0.7;
+        const slamCycle = Math.sin(portal.timer * 4.5 + t.angle);
+        t.mesh.rotation.x = Math.sin(portal.timer * 3.5 + t.angle) * 0.7;
+        t.mesh.rotation.z = Math.cos(portal.timer * 3.5 + t.angle) * 0.7;
         t.mesh.position.copy(t.basePos).addScaledVector(portal.targetNormal, 0.4 + slamCycle * 0.2);
 
         // Ground smash impact on downward stroke
-        if (slamCycle < -0.85 && Math.random() < 0.2) {
+        if (slamCycle < -0.85 && Math.random() < 0.12) {
           const local = t.basePos.clone();
           context.planet.surfaceMesh.worldToLocal(local);
           const uv = vector3ToUV(local);
@@ -134,6 +134,15 @@ export class AbyssalDevourerWeapon extends Weapon {
 
           context.particleSystem.emit(t.basePos, portal.targetNormal, 10, '#8800cc', 0.6, 1.8, 0.4, 0.2);
           context.cameraController.addTrauma(0.12);
+        }
+      }
+
+      // Smooth retraction in final 1.0s
+      if (portal.timer >= portal.duration - 1.0) {
+        const retractT = Math.max(0, (portal.duration - portal.timer) / 1.0);
+        portal.portalMesh.scale.set(retractT, retractT, retractT);
+        for (const t of portal.tentacles) {
+          t.mesh.scale.set(retractT, retractT, retractT);
         }
       }
 

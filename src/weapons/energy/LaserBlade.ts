@@ -70,7 +70,7 @@ export class LaserBladeWeapon extends Weapon {
   public update(delta: number, context: WeaponContext): void {
     for (let i = this.activeBlades.length - 1; i >= 0; i--) {
       const blade = this.activeBlades[i];
-      blade.progress += delta * 2.8; // Slice duration ~0.35s
+      blade.progress += delta * 0.7; // Slice duration ~1.4s
 
       // Move down into the planet and slice across
       const depth = Math.sin(blade.progress * Math.PI) * 0.4;

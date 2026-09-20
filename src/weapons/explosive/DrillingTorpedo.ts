@@ -85,7 +85,7 @@ export class DrillingTorpedoWeapon extends Weapon {
       targetLon: target.lon,
       progress: 0,
       state: 'falling',
-      drillTimer: 0.6,
+      drillTimer: 2.5, // Drills for 2.5 seconds with grinding sparks
     });
 
     context.audioManager.playMissileLaunch();
@@ -96,7 +96,7 @@ export class DrillingTorpedoWeapon extends Weapon {
       const drill = this.activeDrills[i];
 
       if (drill.state === 'falling') {
-        drill.progress += delta * 3.2;
+        drill.progress += delta * 0.9;
         drill.group.position.lerpVectors(drill.startPos, drill.targetPos, drill.progress);
 
         if (drill.progress >= 1.0) {

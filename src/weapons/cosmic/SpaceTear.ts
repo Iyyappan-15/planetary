@@ -49,7 +49,7 @@ export class SpaceTearWeapon extends Weapon {
     this.tears.push({
       mesh,
       duration: 0,
-      maxDuration: 3.5,
+      maxDuration: 8.0, // Active for 8 seconds
     });
 
     context.planet.registerImpact({

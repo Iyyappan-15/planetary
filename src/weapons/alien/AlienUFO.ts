@@ -112,7 +112,7 @@ export class AlienUFOWeapon extends Weapon {
       targetNormal: target.normal.clone(),
       targetPos: target.point.clone(),
       timer: 0,
-      duration: 3.5, // Hovers for 3.5 seconds
+      duration: 11.0, // Hovers and attacks for 11 seconds
       laserCooldown: 0.1,
     });
 
@@ -125,21 +125,29 @@ export class AlienUFOWeapon extends Weapon {
       ufo.timer += delta;
 
       // Spin hull & cycle rim lights
-      ufo.hull.rotation.y += delta * 5.0;
+      ufo.hull.rotation.y += delta * 4.0;
       ufo.laserCooldown -= delta;
 
-      // Small hovering wobble
-      const wobble = Math.sin(ufo.timer * 4.0) * 0.04;
-      ufo.group.position.copy(ufo.hoverPos).addScaledVector(ufo.targetNormal, wobble);
+      // Smooth hovering & orbital patrol around the targeted area
+      const orbitAngle = ufo.timer * 0.8;
+      const orbitRadius = 0.35;
+      const up = Math.abs(ufo.targetNormal.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
+      const tanU = new THREE.Vector3().crossVectors(ufo.targetNormal, up).normalize();
+      const tanV = new THREE.Vector3().crossVectors(ufo.targetNormal, tanU).normalize();
 
-      // Fire emerald death laser while active
-      if (ufo.timer > 0.4 && ufo.timer < ufo.duration - 0.5) {
+      const patrolOffset = tanU.clone().multiplyScalar(Math.cos(orbitAngle) * orbitRadius)
+        .addScaledVector(tanV, Math.sin(orbitAngle) * orbitRadius);
+
+      const wobble = Math.sin(ufo.timer * 3.0) * 0.05;
+      ufo.group.position.copy(ufo.hoverPos)
+        .add(patrolOffset)
+        .addScaledVector(ufo.targetNormal, wobble);
+
+      // Fire emerald death laser while active (stops 1s before warp out)
+      if (ufo.timer > 0.6 && ufo.timer < ufo.duration - 1.0) {
         // Spiral sweep around target location
-        const sweepAngle = ufo.timer * 4.0;
-        const sweepR = 0.25;
-        const up = Math.abs(ufo.targetNormal.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
-        const tanU = new THREE.Vector3().crossVectors(ufo.targetNormal, up).normalize();
-        const tanV = new THREE.Vector3().crossVectors(ufo.targetNormal, tanU).normalize();
+        const sweepAngle = ufo.timer * 3.0;
+        const sweepR = 0.3;
 
         const currentGroundTarget = ufo.targetPos.clone()
           .addScaledVector(tanU, Math.cos(sweepAngle) * sweepR)
@@ -159,7 +167,7 @@ export class AlienUFOWeapon extends Weapon {
         );
 
         if (ufo.laserCooldown <= 0) {
-          ufo.laserCooldown = 0.08;
+          ufo.laserCooldown = 0.12;
 
           const local = currentGroundTarget.clone();
           context.planet.surfaceMesh.worldToLocal(local);
@@ -186,7 +194,15 @@ export class AlienUFOWeapon extends Weapon {
         ufo.beam.visible = false;
       }
 
-      // Warp out
+      // Smooth warp-out exit in final 0.8s
+      if (ufo.timer >= ufo.duration - 0.8) {
+        const exitProgress = (ufo.timer - (ufo.duration - 0.8)) / 0.8;
+        const scale = Math.max(0.01, 1.0 - exitProgress);
+        ufo.group.scale.set(scale, scale, scale);
+        ufo.group.position.addScaledVector(ufo.targetNormal, delta * 4.0);
+      }
+
+      // Warp out complete
       if (ufo.timer >= ufo.duration) {
         context.particleSystem.emit(ufo.group.position, ufo.targetNormal, 30, '#00ffaa', 1.2, 3.0, 0.8, 0.5);
         context.scene.remove(ufo.group);

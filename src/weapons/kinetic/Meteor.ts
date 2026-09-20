@@ -67,7 +67,7 @@ export class MeteorWeapon extends Weapon {
       targetLat: target.lat,
       targetLon: target.lon,
       progress: 0,
-      speed: 4.2, // Time to impact ~ 0.25s
+      speed: 0.9, // Time to impact ~ 1.1s
     });
   }
 

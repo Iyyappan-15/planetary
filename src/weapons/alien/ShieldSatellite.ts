@@ -3,22 +3,21 @@ import { Weapon, WeaponContext } from '../Weapon';
 import { TargetInfo } from '../../types/weapon';
 import { disposeNode } from '../../utils/disposal';
 
-interface ActiveShield {
+interface ActiveShieldSatellite {
   satelliteMesh: THREE.Group;
-  shieldSphere: THREE.Mesh;
-  timer: number;
-  duration: number;
+  orbitAngle: number;
+  altitude: number;
 }
 
 export class ShieldSatelliteWeapon extends Weapon {
-  private activeShields: ActiveShield[] = [];
+  private activeSatellites: ActiveShieldSatellite[] = [];
 
   constructor() {
     super({
       id: 'shield_satellite',
       name: 'Shield Satellite',
       category: 'alien',
-      description: 'Deploys an orbital defense satellite generating a shimmering hexagonal forcefield protecting the planet.',
+      description: 'Deploys an orbital defense satellite generating a persistent forcefield protecting the planet.',
       cooldownMs: 1200,
       iconName: 'Shield',
       damageRadius: 0.0,
@@ -44,70 +43,42 @@ export class ShieldSatelliteWeapon extends Weapon {
     return group;
   }
 
-  private createShieldSphere(radius: number): THREE.Mesh {
-    const shieldGeo = new THREE.IcosahedronGeometry(radius * 1.15, 3);
-    const shieldMat = new THREE.MeshBasicMaterial({
-      color: 0x00ccff,
-      wireframe: true,
-      transparent: true,
-      opacity: 0.45,
-      blending: THREE.AdditiveBlending,
-    });
-    return new THREE.Mesh(shieldGeo, shieldMat);
-  }
-
   public execute(target: TargetInfo, context: WeaponContext): void {
     if (!this.canFire()) return;
     this.lastFiredTime = performance.now();
 
-    const satPos = target.normal.clone().multiplyScalar(context.planet.config.radius + 1.8);
+    const altitude = context.planet.config.radius + 1.8;
+    const satPos = target.normal.clone().multiplyScalar(altitude);
     const satelliteMesh = this.createSatelliteMesh();
     satelliteMesh.position.copy(satPos);
     satelliteMesh.lookAt(new THREE.Vector3(0, 0, 0));
     context.scene.add(satelliteMesh);
 
-    const shieldSphere = this.createShieldSphere(context.planet.config.radius);
-    shieldSphere.position.set(0, 0, 0);
-    context.scene.add(shieldSphere);
+    // Deploy the persistent planetary defense shield!
+    context.planet.deployShield('hex_barrier');
 
-    this.activeShields.push({
+    this.activeSatellites.push({
       satelliteMesh,
-      shieldSphere,
-      timer: 0,
-      duration: 8.0, // Active for 8 seconds
+      orbitAngle: Math.atan2(target.normal.z, target.normal.x),
+      altitude,
     });
 
     context.audioManager.playShieldDeflect();
   }
 
-  public update(delta: number, context: WeaponContext): void {
-    for (let i = this.activeShields.length - 1; i >= 0; i--) {
-      const shield = this.activeShields[i];
-      shield.timer += delta;
-
-      shield.satelliteMesh.rotation.y += delta * 1.2;
-      shield.shieldSphere.rotation.y += delta * 0.4;
-      shield.shieldSphere.rotation.x += delta * 0.2;
-
-      // Pulse opacity
-      const mat = shield.shieldSphere.material as THREE.MeshBasicMaterial;
-      mat.opacity = 0.35 + Math.sin(shield.timer * 4.0) * 0.15;
-
-      if (shield.timer >= shield.duration) {
-        context.scene.remove(shield.satelliteMesh);
-        context.scene.remove(shield.shieldSphere);
-        disposeNode(shield.satelliteMesh);
-        disposeNode(shield.shieldSphere);
-        this.activeShields.splice(i, 1);
-      }
+  public update(delta: number): void {
+    for (const sat of this.activeSatellites) {
+      sat.orbitAngle += delta * 0.2;
+      sat.satelliteMesh.position.x = Math.cos(sat.orbitAngle) * sat.altitude;
+      sat.satelliteMesh.position.z = Math.sin(sat.orbitAngle) * sat.altitude;
+      sat.satelliteMesh.rotation.y += delta * 1.5;
     }
   }
 
   public dispose(): void {
-    for (const s of this.activeShields) {
+    for (const s of this.activeSatellites) {
       disposeNode(s.satelliteMesh);
-      disposeNode(s.shieldSphere);
     }
-    this.activeShields = [];
+    this.activeSatellites = [];
   }
 }

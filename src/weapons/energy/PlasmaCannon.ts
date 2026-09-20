@@ -61,7 +61,7 @@ export class PlasmaCannonWeapon extends Weapon {
       targetLat: target.lat,
       targetLon: target.lon,
       progress: 0,
-      speed: 6.0, // High velocity ~0.16s flight
+      speed: 1.8, // ~0.55s visible projectile flight
     });
 
     context.audioManager.playPlasmaBlast();

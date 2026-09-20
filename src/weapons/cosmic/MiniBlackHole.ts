@@ -142,7 +142,7 @@ export class MiniBlackHoleWeapon extends Weapon {
       group,
       position: holePos,
       duration: 0,
-      maxDuration: 6.0,
+      maxDuration: 12.0, // Active for 12 seconds
       diskMat,
       lensMat,
     });

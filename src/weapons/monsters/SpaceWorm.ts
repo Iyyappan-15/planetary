@@ -113,7 +113,7 @@ export class SpaceWormWeapon extends Weapon {
   public update(delta: number, context: WeaponContext): void {
     for (let wIdx = this.activeWorms.length - 1; wIdx >= 0; wIdx--) {
       const worm = this.activeWorms[wIdx];
-      worm.progress += delta * 0.45; // ~2.2s total traversal
+      worm.progress += delta * 0.16; // ~6.0s total traversal
 
       for (let sIdx = 0; sIdx < worm.segments.length; sIdx++) {
         const seg = worm.segments[sIdx];
@@ -126,11 +126,11 @@ export class SpaceWormWeapon extends Weapon {
         seg.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent);
 
         // Subterranean body writhing
-        const writhe = Math.sin(worm.progress * 15.0 + sIdx * 0.6) * 0.04;
+        const writhe = Math.sin(worm.progress * 8.0 + sIdx * 0.5) * 0.05;
         seg.mesh.position.x += writhe;
 
         // Eject magma sparks behind head
-        if (sIdx === 0 && Math.random() < 0.4) {
+        if (sIdx === 0 && Math.random() < 0.3) {
           context.particleSystem.emit(pt, tangent, 2, '#ff3300', 0.2, 0.8, 0.2, 0.1);
         }
       }

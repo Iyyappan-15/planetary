@@ -166,7 +166,7 @@ export const WeaponToolbar: React.FC<WeaponToolbarProps> = ({
                   className={`drawer-weapon-card shield-card ${isShieldActive ? 'active shield-active' : ''}`}
                   style={{
                     borderColor: isShieldActive ? shield.color : undefined,
-                    boxShadow: isShieldActive ? `0 0 14px ${shield.glowColor}` : undefined,
+                    boxShadow: isShieldActive ? `0 0 16px ${shield.glowColor}` : undefined,
                   }}
                   onClick={() => {
                     if (isShieldActive) {
@@ -187,19 +187,8 @@ export const WeaponToolbar: React.FC<WeaponToolbarProps> = ({
                     <Icon size={20} />
                   </div>
                   <div className="card-info">
-                    <div className="card-title-row">
-                      <span className="card-name">{shield.name}</span>
-                      <span className="shield-hp-badge" style={{ color: shield.color }}>
-                        {shield.maxHp.toLocaleString()} HP
-                      </span>
-                    </div>
-                    <span className="shield-bonus-tag">{shield.absorptionBonus}</span>
+                    <span className="card-name">{shield.name}</span>
                   </div>
-                  {isShieldActive && (
-                    <span className="card-status-active" style={{ background: shield.color }}>
-                      ONLINE
-                    </span>
-                  )}
                 </div>
               );
             })}
@@ -223,7 +212,7 @@ export const WeaponToolbar: React.FC<WeaponToolbarProps> = ({
                   className={`drawer-weapon-card ${isActive ? 'active' : ''}`}
                   style={{
                     borderColor: isActive ? currentTheme.color : undefined,
-                    boxShadow: isActive ? `0 0 14px ${currentTheme.bgGlow}` : undefined,
+                    boxShadow: isActive ? `0 0 16px ${currentTheme.bgGlow}` : undefined,
                   }}
                   onClick={() => onSelectWeapon(isActive ? null : weapon.id)}
                   title={weapon.description}
@@ -239,11 +228,7 @@ export const WeaponToolbar: React.FC<WeaponToolbarProps> = ({
                   </div>
                   <div className="card-info">
                     <span className="card-name">{weapon.name}</span>
-                    {weapon.requiresHold && <span className="card-tag">CONTINUOUS</span>}
                   </div>
-                  {weapon.keyShortcut && (
-                    <span className="card-shortcut">{weapon.keyShortcut}</span>
-                  )}
                 </div>
               );
             })}

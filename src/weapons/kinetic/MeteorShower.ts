@@ -71,8 +71,8 @@ export class MeteorShowerWeapon extends Weapon {
         startPos,
         targetPos: subTarget,
         targetNormal: target.normal.clone(),
-        progress: -(i * 0.12), // Staggered launches
-        speed: 3.8,
+        progress: -(i * 0.25), // Staggered launches
+        speed: 0.85, // ~1.2s flight
       });
     }
 

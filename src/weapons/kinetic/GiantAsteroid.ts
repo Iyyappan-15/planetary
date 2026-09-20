@@ -62,7 +62,7 @@ export class GiantAsteroidWeapon extends Weapon {
       targetLat: target.lat,
       targetLon: target.lon,
       progress: 0,
-      speed: 2.8,
+      speed: 0.42, // ~2.4s approach with atmospheric fire plume
     });
   }
 

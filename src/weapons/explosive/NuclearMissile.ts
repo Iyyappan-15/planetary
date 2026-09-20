@@ -106,7 +106,7 @@ export class NuclearMissileWeapon extends Weapon {
       targetLat: target.lat,
       targetLon: target.lon,
       progress: 0,
-      speed: 1.4, // Flight time ~0.7s
+      speed: 0.55, // Flight time ~1.8s
       midArcPos: midPos,
     });
 

@@ -63,7 +63,7 @@ export class MoonfallWeapon extends Weapon {
   public update(delta: number, context: WeaponContext): void {
     for (let i = this.moons.length - 1; i >= 0; i--) {
       const m = this.moons[i];
-      m.progress += delta * 1.8;
+      m.progress += delta * 0.28; // ~3.5s colossal collision descent
 
       if (m.progress >= 1.0) {
         // Cataclysmic extinction impact

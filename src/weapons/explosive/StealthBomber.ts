@@ -116,15 +116,15 @@ export class StealthBomberWeapon extends Weapon {
   public update(delta: number, context: WeaponContext): void {
     for (let rIdx = this.activeRuns.length - 1; rIdx >= 0; rIdx--) {
       const run = this.activeRuns[rIdx];
-      run.progress += delta * 0.9; // ~1.1s total flight across sky
+      run.progress += delta * 0.26; // ~3.8s total flight across sky
 
       run.jet.position.lerpVectors(run.startPos, run.endPos, run.progress);
 
-      // Drop bombs when near the middle segment
+      // Drop bombs when passing over the target region
       if (run.progress > 0.25 && run.progress < 0.75 && run.bombsLeft > 0) {
         run.bombTimer -= delta;
         if (run.bombTimer <= 0) {
-          run.bombTimer = 0.08;
+          run.bombTimer = 0.22;
           run.bombsLeft--;
           this.dropBomb(run, context);
         }
@@ -133,7 +133,7 @@ export class StealthBomberWeapon extends Weapon {
       // Update falling bombs
       for (let bIdx = run.droppedBombs.length - 1; bIdx >= 0; bIdx--) {
         const bomb = run.droppedBombs[bIdx];
-        bomb.progress += delta * 3.5;
+        bomb.progress += delta * 1.5;
         bomb.mesh.position.lerpVectors(bomb.pos, bomb.targetPos, bomb.progress);
 
         if (bomb.progress >= 1.0) {
