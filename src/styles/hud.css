@@ -647,6 +647,45 @@ body, html, #root {
   border: 1px solid rgba(255, 0, 0, 0.6);
 }
 
+.moon-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 2px 0;
+}
+
+.moon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 9.5px;
+  font-family: var(--font-mono);
+  color: #d8e4ee;
+  letter-spacing: 0.3px;
+  transition: all 0.2s ease;
+}
+
+.moon-badge:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(102, 204, 255, 0.4);
+}
+
+.moon-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 4px currentColor;
+}
+
+.moon-badge-name {
+  white-space: nowrap;
+}
+
 .moon-actions-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;

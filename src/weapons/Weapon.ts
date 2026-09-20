@@ -14,6 +14,7 @@ export interface WeaponContext {
   shockwaveSystem: ShockwaveSystem;
   audioManager: AudioManager;
   moonMesh?: THREE.Mesh | null;
+  moonMeshes?: THREE.Mesh[];
   moonSystem?: any;
 }
 

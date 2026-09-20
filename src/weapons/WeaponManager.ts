@@ -200,7 +200,11 @@ export class WeaponManager {
     if (!context.planet.isDestroyed) {
       targetables.push(context.planet.surfaceMesh);
     }
-    if (context.moonMesh && context.moonMesh.visible && context.moonSystem?.state !== 'destroyed') {
+    if (context.moonMeshes && context.moonMeshes.length > 0) {
+      for (const m of context.moonMeshes) {
+        if (m.visible) targetables.push(m);
+      }
+    } else if (context.moonMesh && context.moonMesh.visible && context.moonSystem?.state !== 'destroyed') {
       targetables.push(context.moonMesh);
     }
 
@@ -215,18 +219,20 @@ export class WeaponManager {
     if (intersects.length > 0) {
       const hit = intersects[0];
       const point = hit.point.clone();
-      const isMoonHit = Boolean(context.moonMesh && hit.object === context.moonMesh);
+      const targetMoon = context.moonSystem?.getMoonByMesh(hit.object);
+      const isMoonHit = Boolean(targetMoon || (context.moonMesh && hit.object === context.moonMesh));
+      const hitMoonMesh = targetMoon ? targetMoon.mesh : (isMoonHit ? context.moonMesh : null);
 
       let normal: THREE.Vector3;
-      if (isMoonHit && context.moonMesh) {
-        normal = point.clone().sub(context.moonMesh.position).normalize();
+      if (hitMoonMesh) {
+        normal = point.clone().sub(hitMoonMesh.position).normalize();
       } else {
         normal = hit.normal ? hit.normal.clone() : point.clone().normalize();
       }
 
       const localPoint = point.clone();
-      if (isMoonHit && context.moonMesh) {
-        context.moonMesh.worldToLocal(localPoint);
+      if (hitMoonMesh) {
+        hitMoonMesh.worldToLocal(localPoint);
       } else {
         context.planet.surfaceMesh.worldToLocal(localPoint);
       }
@@ -250,8 +256,9 @@ export class WeaponManager {
         this.targetMarker.position.copy(point).addScaledVector(normal, 0.02);
         this.targetMarker.lookAt(point.clone().add(normal));
 
-        // Pulse reticle: scale down to 0.45 when aiming at the Moon (radius 0.52 vs Earth 2.2)
-        const baseScale = isMoonHit ? 0.45 : 1.0;
+        // Scale reticle to match the specific moon's radius
+        const moonRadius = targetMoon ? targetMoon.radius : 0.52;
+        const baseScale = isMoonHit ? Math.max(0.25, Math.min(0.7, (moonRadius / 2.2) * 1.8)) : 1.0;
         const s = baseScale * (1.0 + Math.sin(performance.now() * 0.008) * 0.15);
         this.targetMarker.scale.set(s, s, s);
       } else {
@@ -269,7 +276,11 @@ export class WeaponManager {
   public fire(context: WeaponContext): boolean {
     if (!this.currentTarget) return false;
     if (this.currentTarget.targetType === 'planet' && context.planet.isDestroyed) return false;
-    if (this.currentTarget.targetType === 'moon' && context.moonSystem?.state === 'destroyed') return false;
+    if (this.currentTarget.targetType === 'moon') {
+      const targetMoon = context.moonSystem?.getMoonByMesh(this.currentTarget.targetMesh);
+      if (targetMoon && targetMoon.state === 'destroyed') return false;
+      if (!targetMoon && context.moonSystem?.state === 'destroyed') return false;
+    }
 
     const weapon = this.getActiveWeapon();
     if (weapon && weapon.canFire()) {
@@ -295,7 +306,7 @@ export class WeaponManager {
     const active = this.getActiveWeapon();
 
     const isTargetValid = this.currentTarget &&
-      ((this.currentTarget.targetType === 'moon' && context.moonSystem?.state !== 'destroyed') ||
+      ((this.currentTarget.targetType === 'moon' && (!this.currentTarget.targetMesh || context.moonSystem?.getMoonByMesh(this.currentTarget.targetMesh)?.state !== 'destroyed')) ||
        (this.currentTarget.targetType !== 'moon' && !context.planet.isDestroyed));
 
     // If holding down trigger on a weapon that requires hold or can rapid fire

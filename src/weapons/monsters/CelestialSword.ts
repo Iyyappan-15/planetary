@@ -218,10 +218,14 @@ export class CelestialSwordWeapon extends Weapon {
     if (!this.canFire()) return;
     this.lastFiredTime = performance.now();
 
-    const isMoon = target.targetType === 'moon' || Boolean(context.moonMesh && target.point.distanceTo(context.moonMesh.position) < 1.0);
-    const targetCenter = isMoon && context.moonMesh ? context.moonMesh.position.clone() : new THREE.Vector3();
-    const planetRadius = isMoon ? 0.52 : context.planet.config.radius;
-    const scaleFactor = isMoon ? 0.32 : 1.0;
+    const targetMoon = target.targetMesh
+      ? context.moonSystem?.getMoonByMesh(target.targetMesh)
+      : (target.targetType === 'moon' ? context.moonSystem?.getMoonNearPoint(target.point) : null);
+    const isMoon = Boolean(targetMoon || target.targetType === 'moon' || (context.moonMesh && target.point.distanceTo(context.moonMesh.position) < 1.5));
+    const targetMesh = targetMoon ? targetMoon.mesh : (isMoon ? context.moonMesh : null);
+    const targetCenter = targetMesh ? targetMesh.position.clone() : new THREE.Vector3();
+    const planetRadius = targetMoon ? targetMoon.radius : (isMoon ? 0.52 : context.planet.config.radius);
+    const scaleFactor = isMoon ? Math.max(0.22, Math.min(0.55, (planetRadius / 2.2) * 1.4)) : 1.0;
     const swordTipOffset = 6.2 * scaleFactor;
     const swordPommelOffset = 2.0 * scaleFactor;
 
@@ -237,8 +241,8 @@ export class CelestialSwordWeapon extends Weapon {
 
     // Compute exact UV and lat/lon on the opposite side
     const exitLocal = exitPos.clone();
-    if (isMoon && context.moonMesh) {
-      context.moonMesh.worldToLocal(exitLocal);
+    if (targetMesh) {
+      targetMesh.worldToLocal(exitLocal);
     } else {
       context.planet.surfaceMesh.worldToLocal(exitLocal);
     }

@@ -13,8 +13,10 @@ import { AudioManager } from '../audio/AudioManager';
 import { GravityWellWeapon } from '../weapons/gravity/GravityWell';
 import { latLonToVector3, vector3ToUV } from '../utils/math';
 import { ShieldType, ActiveShieldState } from '../types/shield';
-import { MoonSystem, MoonState } from '../planets/MoonSystem';
+import { MoonSystem } from '../planets/MoonSystem';
+import type { MoonState } from '../planets/MoonSystem';
 import { WeaponContext } from '../weapons/Weapon';
+import { PLANET_MOONS } from '../data/moons';
 
 export interface GameCallbacks {
   onIntegrityChange?: (integrity: PlanetIntegrity) => void;
@@ -89,10 +91,8 @@ export class Game {
     this.cameraController.setPlanetRadius(defaultPlanetConfig.radius);
     this.hookPlanetCallbacks();
 
-    // Initialize Moon if default world is Earth
-    if (defaultPlanetConfig.id === 'earth') {
-      this.initMoonSystem();
-    }
+    // Initialize Moons for active planet
+    this.initMoonSystem(defaultPlanetConfig.id);
 
     // 6. Weapon Manager
     this.weaponManager = new WeaponManager();
@@ -102,17 +102,23 @@ export class Game {
     this.bindEvents();
   }
 
-  private initMoonSystem(): void {
+  private initMoonSystem(planetId: string = 'earth'): void {
     if (this.moonSystem) {
       this.sceneManager.scene.remove(this.moonSystem.group);
       this.moonSystem.dispose();
       this.moonSystem = null;
+      this.planet.setMoonSystem(null);
+      this.callbacks.onMoonStateChange?.(null);
     }
-    this.moonSystem = new MoonSystem();
-    this.moonSystem.isPaused = this.isRotationPaused;
-    this.planet.setMoonSystem(this.moonSystem);
-    this.sceneManager.scene.add(this.moonSystem.group);
-    this.callbacks.onMoonStateChange?.(this.moonSystem.state);
+
+    const defs = PLANET_MOONS[planetId];
+    if (defs && defs.length > 0) {
+      this.moonSystem = new MoonSystem(defs);
+      this.moonSystem.isPaused = this.isRotationPaused;
+      this.planet.setMoonSystem(this.moonSystem);
+      this.sceneManager.scene.add(this.moonSystem.group);
+      this.callbacks.onMoonStateChange?.(this.moonSystem.state);
+    }
   }
 
   public getWeaponContext(): WeaponContext {
@@ -124,6 +130,7 @@ export class Game {
       shockwaveSystem: this.shockwaveSystem,
       audioManager: this.audioManager,
       moonMesh: this.moonSystem?.moonMesh,
+      moonMeshes: this.moonSystem?.moonMeshes,
       moonSystem: this.moonSystem,
     };
   }
@@ -262,18 +269,8 @@ export class Game {
     this.hookPlanetCallbacks();
     this.wasDestroyed = false;
 
-    // Handle Moon for Earth
-    if (newConfig.id === 'earth') {
-      this.initMoonSystem();
-    } else if (this.moonSystem) {
-      this.sceneManager.scene.remove(this.moonSystem.group);
-      this.moonSystem.dispose();
-      this.moonSystem = null;
-      this.planet.setMoonSystem(null);
-      this.callbacks.onMoonStateChange?.(null);
-    } else {
-      this.planet.setMoonSystem(null);
-    }
+    // Initialize Moons for active planet
+    this.initMoonSystem(newConfig.id);
 
     this.audioManager.playReset();
   }
@@ -394,7 +391,7 @@ export class Game {
     this.audioManager.playReset();
   }
 
-  public slingshotMoon(): void {
+  public slingshotMoon(moonId?: string): void {
     if (!this.moonSystem) return;
     this.moonSystem.slingshot({
       scene: this.sceneManager.scene,
@@ -403,11 +400,11 @@ export class Game {
       shockwaveSystem: this.shockwaveSystem,
       cameraController: this.cameraController,
       audioManager: this.audioManager,
-    });
+    }, moonId);
     this.callbacks.onMoonStateChange?.(this.moonSystem.state);
   }
 
-  public deorbitMoon(): void {
+  public deorbitMoon(moonId?: string): void {
     if (!this.moonSystem) return;
     this.moonSystem.deorbit({
       scene: this.sceneManager.scene,
@@ -416,7 +413,7 @@ export class Game {
       shockwaveSystem: this.shockwaveSystem,
       cameraController: this.cameraController,
       audioManager: this.audioManager,
-    });
+    }, moonId);
     this.callbacks.onMoonStateChange?.(this.moonSystem.state);
   }
 

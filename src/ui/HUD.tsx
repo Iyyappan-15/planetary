@@ -6,7 +6,8 @@ import { PlanetIntegrity } from '../types/game';
 import { RotateCcw, Sliders, Globe, Maximize, Users, AlertTriangle, Skull, Activity, Satellite, Shield, Orbit, Moon, Flame, MoveUpRight } from 'lucide-react';
 import { WeaponToolbar } from './WeaponToolbar';
 import { ControlsHelp } from './ControlsHelp';
-import { MoonState } from '../planets/MoonSystem';
+import type { MoonState } from '../planets/MoonSystem';
+import { PLANET_MOONS } from '../data/moons';
 
 interface HUDProps {
   planet: PlanetConfig;
@@ -205,54 +206,69 @@ export const HUD: React.FC<HUDProps> = ({
       {/* Right Side Telemetry & Demographics Monitor */}
       <div className="hud-right-panel">
         {/* Moon Orbital Physics & Gravitational Weapons Card */}
-        {moonState !== null && (
-          <div className="hud-moon-card">
-            <div className="moon-header">
-              <div className="moon-title-wrap">
-                <Moon size={14} style={{ color: '#66ccff' }} />
-                <span>LUNAR ORBIT</span>
-              </div>
-              <span className={`moon-status-tag ${moonState}`}>
-                {moonState === 'orbiting'
-                  ? 'STABLE'
-                  : moonState === 'deorbiting'
-                  ? 'COLLISION'
-                  : moonState === 'slingshot'
-                  ? 'ESCAPING'
-                  : 'DESTROYED'}
-              </span>
-            </div>
+        {(() => {
+          const planetMoons = PLANET_MOONS[planet.id] || [];
+          if (planetMoons.length === 0 || moonState === null) return null;
 
-            <div className="moon-actions-grid">
-              <button
-                className="moon-action-btn btn-crash"
-                onClick={onDeorbitMoon}
-                disabled={moonState === 'deorbiting' || moonState === 'destroyed'}
-                title="De-orbit Moon on a collision course into Earth"
-              >
-                <Flame size={13} />
-                <span>Crash Moon</span>
-              </button>
-              <button
-                className="moon-action-btn btn-sling"
-                onClick={onSlingshotMoon}
-                disabled={moonState === 'slingshot' || moonState === 'destroyed'}
-                title="Slingshot Moon out of orbit into deep space"
-              >
-                <MoveUpRight size={13} />
-                <span>Slingshot</span>
-              </button>
-              <button
-                className="moon-action-btn btn-reset"
-                onClick={onResetMoon}
-                title="Restore Moon to stable orbit"
-              >
-                <RotateCcw size={13} />
-                <span>Restore</span>
-              </button>
+          return (
+            <div className="hud-moon-card">
+              <div className="moon-header">
+                <div className="moon-title-wrap">
+                  <Moon size={14} style={{ color: '#66ccff' }} />
+                  <span>{planetMoons.length === 1 ? 'MOON ORBIT' : `MOONS (${planetMoons.length})`}</span>
+                </div>
+                <span className={`moon-status-tag ${moonState}`}>
+                  {moonState === 'orbiting'
+                    ? 'STABLE'
+                    : moonState === 'deorbiting'
+                    ? 'COLLISION'
+                    : moonState === 'slingshot'
+                    ? 'ESCAPING'
+                    : 'DESTROYED'}
+                </span>
+              </div>
+
+              {/* Badges for each orbiting moon */}
+              <div className="moon-chips-row">
+                {planetMoons.map((m) => (
+                  <div key={m.id} className="moon-badge" title={`${m.name}: ${m.description}`}>
+                    <span className="moon-dot" style={{ backgroundColor: m.accentColor || m.baseColor }} />
+                    <span className="moon-badge-name">{m.name.split(' (')[0]}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="moon-actions-grid">
+                <button
+                  className="moon-action-btn btn-crash"
+                  onClick={onDeorbitMoon}
+                  disabled={moonState === 'deorbiting' || moonState === 'destroyed'}
+                  title="De-orbit Moon on a catastrophic collision course"
+                >
+                  <Flame size={13} />
+                  <span>{planetMoons.length > 1 ? 'Crash Moons' : 'Crash Moon'}</span>
+                </button>
+                <button
+                  className="moon-action-btn btn-sling"
+                  onClick={onSlingshotMoon}
+                  disabled={moonState === 'slingshot' || moonState === 'destroyed'}
+                  title="Slingshot Moon out of orbit into deep space"
+                >
+                  <MoveUpRight size={13} />
+                  <span>Slingshot</span>
+                </button>
+                <button
+                  className="moon-action-btn btn-reset"
+                  onClick={onResetMoon}
+                  title="Restore Moons to stable orbits"
+                >
+                  <RotateCcw size={13} />
+                  <span>Restore</span>
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Population & Demographics Card */}
         {pop && pop.initial > 0 && (

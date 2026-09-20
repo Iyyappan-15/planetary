@@ -14,7 +14,7 @@ import { loadStoredSettings, saveStoredSettings } from './utils/storage';
 import './styles/hud.css';
 
 import { ShieldType, ActiveShieldState } from './types/shield';
-import { MoonState } from './planets/MoonSystem';
+import type { MoonState } from './planets/MoonSystem';
 
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
