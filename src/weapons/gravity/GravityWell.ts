@@ -47,14 +47,30 @@ export class GravityWellWeapon extends Weapon {
     const coreMesh = new THREE.Mesh(coreGeo, coreMat);
     group.add(coreMesh);
 
-    // Glowing accretion ring
-    const discGeo = new THREE.RingGeometry(0.3, 0.75, 32);
+    // Glowing accretion ring with smooth radial gradient
+    const discGeo = new THREE.RingGeometry(0.24, 0.85, 48);
     discGeo.rotateX(-Math.PI / 2);
-    const discMat = new THREE.MeshBasicMaterial({
-      color: 0xaa44ff,
+    const discMat = new THREE.ShaderMaterial({
+      vertexShader: `
+        varying vec3 vLocalPos;
+        void main() {
+          vLocalPos = position;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vLocalPos;
+        void main() {
+          float r = length(vLocalPos.xy);
+          float t = (r - 0.24) / (0.85 - 0.24);
+          float edgeAlpha = smoothstep(0.0, 0.15, t) * smoothstep(1.0, 0.7, t);
+          vec3 col = mix(vec3(0.9, 0.7, 1.0), vec3(0.5, 0.1, 0.9), t);
+          gl_FragColor = vec4(col, edgeAlpha * 0.85);
+        }
+      `,
       side: THREE.DoubleSide,
       transparent: true,
-      opacity: 0.85,
+      depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
     const discMesh = new THREE.Mesh(discGeo, discMat);

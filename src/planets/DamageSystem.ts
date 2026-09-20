@@ -41,8 +41,8 @@ export class DamageSystem {
     // Precise UV to canvas mapping matching WebGL texture orientation
     const cx = impact.u * this.width;
     const cy = (1.0 - impact.v) * this.height;
-    // Clean, realistic crater radius proportionate to planet scale
-    const pixelRadius = Math.max(6, Math.min(55, impact.radius * this.width * 0.32));
+    // Clean, realistic crater radius proportionate to planet scale (crisp and high-detail)
+    const pixelRadius = Math.max(5, Math.min(38, impact.radius * this.width * 0.26));
 
     this.impactCount++;
     this.totalDamageScore += impact.intensity * (pixelRadius / 15);
@@ -65,12 +65,12 @@ export class DamageSystem {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
 
-    // 1. Clean circular scorched crater (R = depth, G = scorch, B = molten heat)
+    // 1. Sharp scorched impact basin with charred rim (R = depth, G = scorch, B = molten heat)
     const scorchGrad = ctx.createRadialGradient(x, y, 0, x, y, r);
-    const heatByte = Math.min(255, Math.floor(heat * 180));
-    scorchGrad.addColorStop(0, `rgba(255, 230, ${heatByte}, ${clamp(intensity * 0.95, 0.4, 0.95)})`);
-    scorchGrad.addColorStop(0.45, `rgba(180, 200, ${Math.floor(heatByte * 0.5)}, ${clamp(intensity * 0.8, 0.3, 0.85)})`);
-    scorchGrad.addColorStop(0.75, `rgba(90, 140, 20, ${clamp(intensity * 0.5, 0.1, 0.5)})`);
+    const heatByte = Math.min(255, Math.floor(heat * 140));
+    scorchGrad.addColorStop(0, `rgba(255, 240, ${heatByte}, ${clamp(intensity * 0.95, 0.4, 0.95)})`);
+    scorchGrad.addColorStop(0.35, `rgba(180, 220, ${Math.floor(heatByte * 0.4)}, ${clamp(intensity * 0.85, 0.35, 0.9)})`);
+    scorchGrad.addColorStop(0.70, `rgba(90, 160, 10, ${clamp(intensity * 0.6, 0.15, 0.6)})`);
     scorchGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
     ctx.fillStyle = scorchGrad;
@@ -78,12 +78,12 @@ export class DamageSystem {
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
 
-    // 2. Central warm ember core for high-energy hits
-    if (heat > 0.4) {
-      const coreR = r * 0.38;
+    // 2. Focused central ember core (inner 26% of crater) for high-energy strikes
+    if (heat > 0.35) {
+      const coreR = r * 0.26;
       const coreGrad = ctx.createRadialGradient(x, y, 0, x, y, coreR);
-      coreGrad.addColorStop(0, `rgba(255, 180, 200, ${heat * 0.75})`);
-      coreGrad.addColorStop(0.6, `rgba(255, 80, 100, ${heat * 0.35})`);
+      coreGrad.addColorStop(0, `rgba(255, 160, 220, ${heat * 0.8})`);
+      coreGrad.addColorStop(0.5, `rgba(255, 60, 100, ${heat * 0.35})`);
       coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
       ctx.fillStyle = coreGrad;

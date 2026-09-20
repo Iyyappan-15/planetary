@@ -70,6 +70,7 @@ export class Game {
     this.planet = new Planet(defaultPlanetConfig, this.sceneManager.sunLight.position);
     this.sceneManager.scene.add(this.planet.group);
     this.cameraController.setPlanetRadius(defaultPlanetConfig.radius);
+    this.hookPlanetCallbacks();
 
     // 6. Weapon Manager
     this.weaponManager = new WeaponManager();
@@ -180,9 +181,27 @@ export class Game {
 
     this.cameraController.setPlanetRadius(newConfig.radius);
     this.cameraController.resetCamera();
+    this.hookPlanetCallbacks();
     this.wasDestroyed = false;
 
     this.audioManager.playReset();
+  }
+
+  private hookPlanetCallbacks(): void {
+    this.planet.fractureSystem.onCoreExplode = () => {
+      this.audioManager.playPlanetBreakup();
+      this.cameraController.addTrauma(1.0);
+      this.particleSystem.emit(
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, 1, 0),
+        180,
+        '#ff9933',
+        2.5,
+        10.0,
+        3.0,
+        1.0
+      );
+    };
   }
 
   public setWeapon(id: WeaponId | null): void {
