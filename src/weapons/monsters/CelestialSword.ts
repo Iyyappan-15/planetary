@@ -274,7 +274,7 @@ export class CelestialSwordWeapon extends Weapon {
       pulseTimer: 0,
     });
 
-    context.audioManager.playCelestialSword();
+    context.audioManager.playCelestialSwordLaunch();
   }
 
   public update(delta: number, context: WeaponContext): void {
@@ -480,7 +480,7 @@ export class CelestialSwordWeapon extends Weapon {
 
     // 4. Camera trauma & impact audio
     context.cameraController.addTrauma(0.85);
-    context.audioManager.playCelestialSword();
+    context.audioManager.playCelestialSwordImpact();
   }
 
   /**
@@ -514,7 +514,7 @@ export class CelestialSwordWeapon extends Weapon {
 
     // 4. Secondary camera trauma & sound
     context.cameraController.addTrauma(0.9);
-    context.audioManager.playCelestialSword();
+    context.audioManager.playCelestialSwordImpact();
   }
 
   public dispose(): void {

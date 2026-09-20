@@ -544,23 +544,84 @@ export class AudioManager {
     osc.stop(now + 1.8);
   }
 
-  public playCelestialSword(): void {
+  /**
+   * Crisp, clean metallic sword whoosh/slice on launch
+   */
+  public playCelestialSwordLaunch(): void {
     if (!this.ctx || !this.sfxGain || this.settings.muted) return;
     const now = this.ctx.currentTime;
-    // Divine resonant chime
-    const osc1 = this.ctx.createOscillator();
-    const gain1 = this.ctx.createGain();
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(523.25, now); // C5
-    osc1.frequency.exponentialRampToValueAtTime(1046.5, now + 0.8);
-    gain1.gain.setValueAtTime(0.6, now);
-    gain1.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
-    osc1.connect(gain1);
-    gain1.connect(this.sfxGain);
-    osc1.start(now);
-    osc1.stop(now + 1.3);
-    // Deep impalement thud
-    this.playNoiseBurst(0.85, 300, 1.2);
+
+    // Fast whoosh noise
+    const duration = 0.35;
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1200, now);
+    filter.frequency.exponentialRampToValueAtTime(300, now + duration);
+    filter.Q.setValueAtTime(2.5, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0.01, now);
+    gain.gain.linearRampToValueAtTime(0.4, now + 0.06);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.sfxGain);
+
+    noise.start(now);
+    noise.stop(now + duration);
+
+    // Subtle clean metallic slice tone
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(680, now);
+    osc.frequency.exponentialRampToValueAtTime(340, now + 0.22);
+    oscGain.gain.setValueAtTime(0.15, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc.connect(oscGain);
+    oscGain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.23);
+  }
+
+  /**
+   * Simple, solid, punchy sword impact / impalement
+   */
+  public playCelestialSwordImpact(): void {
+    if (!this.ctx || !this.sfxGain || this.settings.muted) return;
+    const now = this.ctx.currentTime;
+
+    // Clean low bass thump
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(110, now);
+    osc.frequency.exponentialRampToValueAtTime(35, now + 0.3);
+
+    oscGain.gain.setValueAtTime(0.65, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    osc.connect(oscGain);
+    oscGain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.38);
+
+    // Short crisp impact strike
+    this.playNoiseBurst(0.25, 450, 0.55);
+  }
+
+  public playCelestialSword(): void {
+    this.playCelestialSwordImpact();
   }
 
   public playTitanStomp(): void {
