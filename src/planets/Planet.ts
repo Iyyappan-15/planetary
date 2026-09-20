@@ -76,7 +76,7 @@ export class Planet {
 
     // 3. Create Cloud Layer if configured (so texture is available for surface cloud shadows)
     if (config.clouds?.enabled) {
-      this.clouds = new CloudLayer(config.radius, config.clouds, isEarth, sunDirection);
+      this.clouds = new CloudLayer(config.radius, config.clouds, isEarth);
       this.group.add(this.clouds.mesh);
     }
 
@@ -87,7 +87,6 @@ export class Planet {
       normalMap: this.normalTexture,
       specularMap: this.specularTexture,
       nightMap: this.nightTexture,
-      cloudMap: this.clouds ? this.clouds.texture : null,
       damageMap: this.damageSystem.damageTexture,
       sunDirection,
       coreColor: config.destruction.coreColor,
@@ -239,7 +238,7 @@ export class Planet {
       if (!this.isRotationPaused) {
         this.surfaceMesh.rotation.y += this.config.rotationSpeed * delta;
         if (this.clouds) {
-          this.clouds.update(delta, sunDirection);
+          this.clouds.update(delta);
         }
       }
       if (this.atmosphere) {

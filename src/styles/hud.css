@@ -208,6 +208,24 @@ body, html, #root {
   box-shadow: 0 0 10px rgba(255, 170, 51, 0.25);
 }
 
+.hud-btn.hud-toggle-btn.active-cyan {
+  border-color: rgba(0, 240, 255, 0.6);
+  background: rgba(0, 240, 255, 0.12);
+  color: #00f0ff;
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+}
+
+.hud-btn.hud-toggle-btn.active-cyan .hud-checkbox.checked {
+  border-color: #00f0ff;
+  background: rgba(0, 240, 255, 0.25);
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+}
+
+.hud-btn.hud-toggle-btn.active-cyan .hud-checkbox-inner {
+  background-color: #00f0ff;
+  box-shadow: 0 0 4px #00f0ff;
+}
+
 .hud-checkbox {
   width: 14px;
   height: 14px;

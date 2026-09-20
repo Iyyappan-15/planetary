@@ -5,7 +5,6 @@ export interface PlanetMaterialOptions {
   normalMap?: THREE.Texture | null;
   specularMap?: THREE.Texture | null;
   nightMap?: THREE.Texture | null;
-  cloudMap?: THREE.Texture | null;
   damageMap: THREE.Texture;
   sunDirection: THREE.Vector3;
   coreColor?: string;
@@ -39,7 +38,6 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
       uniform sampler2D tNormal;
       uniform sampler2D tSpecular;
       uniform sampler2D tNight;
-      uniform sampler2D tClouds;
       uniform sampler2D tDamage;
 
       uniform vec3 uSunDirection;
@@ -47,7 +45,6 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
       uniform float uHasOcean;
       uniform float uHasNightLights;
       uniform float uHasNormalMap;
-      uniform float uHasClouds;
       uniform float uIsStar;
 
       varying vec2 vUv;
@@ -95,29 +92,29 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
           return;
         }
 
-        // ================= REAL GOOGLE EARTH COLOR GRADING =================
+        // ================= REAL GOOGLE EARTH COLOR RADIOMETRY =================
         if (uHasOcean > 0.5) {
           float oceanMask = texture2D(tSpecular, vUv).r;
           if (oceanMask > 0.28) {
-            // Google Earth royal sapphire ocean with turquoise shallow coastal shelves
+            // Google Earth royal sapphire ocean with turquoise coastal shallows
             float shelfDepth = smoothstep(0.28, 0.70, oceanMask);
-            vec3 deepOcean = vec3(0.04, 0.22, 0.48);
-            vec3 shallowOcean = vec3(0.08, 0.44, 0.58);
+            vec3 deepOcean = vec3(0.04, 0.20, 0.46);
+            vec3 shallowOcean = vec3(0.08, 0.42, 0.56);
             vec3 googleOcean = mix(shallowOcean, deepOcean, shelfDepth);
-            rawRgb = mix(rawRgb, googleOcean, 0.82);
+            rawRgb = mix(rawRgb, googleOcean, 0.80);
           } else {
-            // Continents: Boost lush green vegetation (India, SE Asia, Europe)
+            // Continents: Natural satellite green vegetation (India, SE Asia, Europe)
             float greenMask = max(0.0, rawRgb.g - max(rawRgb.r, rawRgb.b) * 0.86);
-            rawRgb += vec3(-0.04, 0.15, -0.02) * greenMask * 1.25;
+            rawRgb += vec3(-0.03, 0.12, -0.02) * greenMask * 1.1;
 
             // Desert sand warmth (Sahara, Arabia, Thar Desert)
             float desertMask = max(0.0, (rawRgb.r + rawRgb.g) * 0.5 - rawRgb.b);
-            rawRgb += vec3(0.07, 0.05, 0.0) * desertMask * 0.42;
+            rawRgb += vec3(0.06, 0.04, 0.0) * desertMask * 0.38;
           }
         }
 
-        // Film-grade contrast & tone curve
-        vec3 gradedRgb = mix(rawRgb, rawRgb * rawRgb * (3.0 - 2.0 * rawRgb), 0.22);
+        // Balanced natural contrast curve
+        vec3 gradedRgb = mix(rawRgb, rawRgb * rawRgb * (3.0 - 2.0 * rawRgb), 0.20);
 
         // Topographic normal map perturbation for realistic mountain ridges & elevation
         if (uHasNormalMap > 0.5) {
@@ -132,22 +129,15 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
         // Apply weapon damage scorch & charring
         vec3 scorchedColor = mix(gradedRgb, vec3(0.04, 0.03, 0.03), scorchFactor);
 
-        // Subtle cloud shadow cast onto the terrain below
-        if (uHasClouds > 0.5) {
-          vec2 cloudUv = vUv - normalize(sunDir).xy * 0.003;
-          float cloudCover = texture2D(tClouds, cloudUv).r;
-          scorchedColor *= (1.0 - cloudCover * 0.38);
-        }
-
         // ================= GOOGLE EARTH DAYLIGHT ILLUMINATION =================
         float NdotL = dot(normal, sunDir);
         float dayFactor = smoothstep(-0.25, 0.35, NdotL);
         float nightFactor = 1.0 - dayFactor;
 
-        // Rich daylight diffuse baseline: Earth reflects abundant ambient light
+        // Rich daylight diffuse baseline: Earth reflects abundant ambient light in space
         vec3 diffuse = scorchedColor * (0.16 + 0.84 * dayFactor);
 
-        // Specular ocean sun glint: sharp, realistic sun reflection on water
+        // Specular ocean sun glint: sharp, realistic reflection on water
         if (uHasOcean > 0.5) {
           float specMask = texture2D(tSpecular, vUv).r * (1.0 - scorchFactor);
           if (specMask > 0.28) {
@@ -160,7 +150,7 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
 
         // Google Earth Rayleigh atmospheric limb haze on planetary horizon
         float rim = 1.0 - max(dot(normalize(vWorldNormal), viewDir), 0.0);
-        float limbHaze = pow(rim, 3.4) * 0.65;
+        float limbHaze = pow(rim, 3.4) * 0.62;
         vec3 hazeColor = vec3(0.35, 0.72, 1.0);
         diffuse = mix(diffuse, hazeColor, limbHaze * (0.35 + 0.65 * dayFactor));
 
@@ -191,14 +181,12 @@ export class PlanetMaterial extends THREE.ShaderMaterial {
         tNormal: { value: options.normalMap || new THREE.Texture() },
         tSpecular: { value: options.specularMap || new THREE.Texture() },
         tNight: { value: options.nightMap || new THREE.Texture() },
-        tClouds: { value: options.cloudMap || new THREE.Texture() },
         tDamage: { value: options.damageMap },
         uSunDirection: { value: options.sunDirection.clone() },
         uCoreColor: { value: new THREE.Color(options.coreColor || '#ff4500') },
         uHasOcean: { value: options.hasOcean ? 1.0 : 0.0 },
         uHasNightLights: { value: options.nightMap ? 1.0 : 0.0 },
         uHasNormalMap: { value: options.normalMap ? 1.0 : 0.0 },
-        uHasClouds: { value: options.cloudMap ? 1.0 : 0.0 },
         uIsStar: { value: options.isStar ? 1.0 : 0.0 },
       },
     });

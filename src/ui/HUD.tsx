@@ -13,6 +13,8 @@ interface HUDProps {
   activeWeaponId: WeaponId | null;
   isRotationPaused: boolean;
   onToggleRotation: () => void;
+  isCloudsVisible: boolean;
+  onToggleClouds: () => void;
   onSelectWeapon: (id: WeaponId | null) => void;
   onOpenPlanetSelector: () => void;
   onOpenSatelliteMap: () => void;
@@ -28,6 +30,8 @@ export const HUD: React.FC<HUDProps> = ({
   activeWeaponId,
   isRotationPaused,
   onToggleRotation,
+  isCloudsVisible,
+  onToggleClouds,
   onSelectWeapon,
   onOpenPlanetSelector,
   onOpenSatelliteMap,
@@ -104,6 +108,20 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
             <span>{isRotationPaused ? 'Rotation Paused' : 'Rotate Planet'}</span>
           </button>
+
+          {/* Cloud Layer Toggle Checkbox Button */}
+          {planet.clouds?.enabled && (
+            <button
+              className={`hud-btn hud-toggle-btn ${isCloudsVisible ? 'active-cyan' : ''}`}
+              onClick={onToggleClouds}
+              title={isCloudsVisible ? 'Hide Atmospheric Clouds' : 'Show Atmospheric Clouds'}
+            >
+              <div className={`hud-checkbox ${isCloudsVisible ? 'checked' : ''}`}>
+                {isCloudsVisible && <div className="hud-checkbox-inner" />}
+              </div>
+              <span>Clouds</span>
+            </button>
+          )}
 
           {/* Orbital Satellite Map Reconnaissance */}
           <button className="hud-btn btn-cyan" onClick={onOpenSatelliteMap} title="Open Satellite Reconnaissance Map (M)">

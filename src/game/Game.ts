@@ -191,6 +191,7 @@ export class Game {
     // Instantiate new planet
     this.planet = new Planet(newConfig, this.sceneManager.sunLight.position);
     this.planet.isRotationPaused = this.isRotationPaused;
+    this.planet.setCloudsVisible(this.isCloudsVisible);
     this.sceneManager.scene.add(this.planet.group);
 
     this.cameraController.setPlanetRadius(newConfig.radius);
@@ -232,9 +233,16 @@ export class Game {
     this.audioManager.playUiClick();
   }
 
+  public isCloudsVisible: boolean = true;
+
   public setRotationPaused(paused: boolean): void {
     this.isRotationPaused = paused;
     this.planet.isRotationPaused = paused;
+  }
+
+  public setCloudsVisible(visible: boolean): void {
+    this.isCloudsVisible = visible;
+    this.planet.setCloudsVisible(visible);
   }
 
   public focusOnCoordinates(lat: number, lon: number): void {

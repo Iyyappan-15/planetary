@@ -79,10 +79,20 @@ export const App: React.FC = () => {
     gameRef.current?.resetPlanet();
   }, []);
 
+  const [isCloudsVisible, setIsCloudsVisible] = useState<boolean>(true);
+
   const handleToggleRotation = useCallback(() => {
     setIsRotationPaused((prev) => {
       const next = !prev;
       gameRef.current?.setRotationPaused(next);
+      return next;
+    });
+  }, []);
+
+  const handleToggleClouds = useCallback(() => {
+    setIsCloudsVisible((prev) => {
+      const next = !prev;
+      gameRef.current?.setCloudsVisible(next);
       return next;
     });
   }, []);
@@ -161,6 +171,8 @@ export const App: React.FC = () => {
           activeWeaponId={activeWeaponId}
           isRotationPaused={isRotationPaused}
           onToggleRotation={handleToggleRotation}
+          isCloudsVisible={isCloudsVisible}
+          onToggleClouds={handleToggleClouds}
           onSelectWeapon={handleSelectWeapon}
           onOpenPlanetSelector={() => setIsPlanetSelectorOpen(true)}
           onOpenSatelliteMap={() => setIsSatelliteMapOpen(true)}
