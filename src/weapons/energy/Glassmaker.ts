@@ -11,7 +11,7 @@ export class GlassmakerWeapon extends Weapon {
     super({
       id: 'planetary_glassmaker',
       name: 'Glassmaker',
-      category: 'energy',
+      category: 'lasers',
       description: 'Ultra-high frequency thermal wave instantly vitrifying land and oceans into reflective dark glass.',
       cooldownMs: 1000,
       iconName: 'Sparkles',

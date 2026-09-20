@@ -22,7 +22,7 @@ export class PlasmaBeamWeapon extends Weapon {
     super({
       id: 'plasma_beam',
       name: 'Plasma Beam',
-      category: 'energy',
+      category: 'lasers',
       description: 'Concentrated superheated plasma burst causing catastrophic thermal vaporization.',
       cooldownMs: 600,
       iconName: 'Sun',

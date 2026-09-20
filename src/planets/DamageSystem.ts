@@ -47,17 +47,41 @@ export class DamageSystem {
     this.impactCount++;
     this.totalDamageScore += impact.intensity * (pixelRadius / 15);
 
-    // Render clean, realistic circular impact crater
-    this.drawCrater(cx, cy, pixelRadius, impact.intensity, impact.heat);
+    if (impact.type === 'freeze') {
+      this.drawFrost(cx, cy, pixelRadius * 1.3, impact.intensity);
+      if (cx - pixelRadius < 0) this.drawFrost(cx + this.width, cy, pixelRadius * 1.3, impact.intensity);
+      else if (cx + pixelRadius > this.width) this.drawFrost(cx - this.width, cy, pixelRadius * 1.3, impact.intensity);
+    } else {
+      // Render clean, realistic circular impact crater
+      this.drawCrater(cx, cy, pixelRadius, impact.intensity, impact.heat);
 
-    // Handle seamless UV seam wrapping horizontally
-    if (cx - pixelRadius < 0) {
-      this.drawCrater(cx + this.width, cy, pixelRadius, impact.intensity, impact.heat);
-    } else if (cx + pixelRadius > this.width) {
-      this.drawCrater(cx - this.width, cy, pixelRadius, impact.intensity, impact.heat);
+      // Handle seamless UV seam wrapping horizontally
+      if (cx - pixelRadius < 0) {
+        this.drawCrater(cx + this.width, cy, pixelRadius, impact.intensity, impact.heat);
+      } else if (cx + pixelRadius > this.width) {
+        this.drawCrater(cx - this.width, cy, pixelRadius, impact.intensity, impact.heat);
+      }
     }
 
     this.damageTexture.needsUpdate = true;
+  }
+
+  private drawFrost(x: number, y: number, r: number, intensity: number): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+
+    const frostGrad = ctx.createRadialGradient(x, y, 0, x, y, r);
+    frostGrad.addColorStop(0, `rgba(220, 245, 255, ${clamp(intensity * 0.85, 0.4, 0.95)})`);
+    frostGrad.addColorStop(0.5, `rgba(160, 220, 255, ${clamp(intensity * 0.65, 0.25, 0.8)})`);
+    frostGrad.addColorStop(0.85, `rgba(100, 180, 240, ${clamp(intensity * 0.35, 0.1, 0.5)})`);
+    frostGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = frostGrad;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   private drawCrater(x: number, y: number, r: number, intensity: number, heat: number): void {

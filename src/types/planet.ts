@@ -78,4 +78,6 @@ export interface ImpactData {
   intensity: number; // 0..1
   heat: number; // 0..1 molten glow
   timestamp: number;
+  type?: 'blast' | 'freeze' | 'laser';
 }
+

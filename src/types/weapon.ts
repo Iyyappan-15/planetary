@@ -1,17 +1,42 @@
 import * as THREE from 'three';
 
-export type WeaponCategory = 'kinetic' | 'energy' | 'explosive' | 'gravity' | 'cosmic';
+export type WeaponCategory = 'explosives' | 'lasers' | 'celestial' | 'alien' | 'monsters';
 
 export type WeaponId =
+  // Explosives & Missiles
+  | 'nuclear_missile'
+  | 'cluster_missiles'
+  | 'antimatter_bomb'
+  | 'stealth_bomber'
+  | 'drilling_torpedo'
+  // Lasers & Energy
+  | 'continuous_laser'
+  | 'freeze_ray'
+  | 'plasma_cannon'
+  | 'laser_blade'
+  | 'lightning_storm'
+  // Celestial & Spacial
+  | 'meteor_shower'
+  | 'giant_asteroid'
+  | 'moon_collision'
+  | 'black_hole'
+  | 'space_tear'
+  // Alien Technology
+  | 'alien_ufo'
+  | 'planet_destroyer'
+  | 'shield_satellite'
+  | 'harvester_probe'
+  // Monsters & Titans
+  | 'space_worm'
+  | 'celestial_punch'
+  | 'abyssal_devourer'
+  // Aliases for compatibility
   | 'meteor'
   | 'orbital_laser'
   | 'nuclear_blast'
   | 'gravity_well'
-  // Extended weapons
-  | 'giant_asteroid'
   | 'plasma_beam'
   | 'mini_black_hole'
-  | 'space_tear'
   | 'planetary_glassmaker'
   | 'moonfall';
 
@@ -36,5 +61,5 @@ export interface WeaponConfig {
   keyShortcut?: string;
   damageRadius: number;
   damageIntensity: number;
-  requiresHold?: boolean; // For continuous weapons like Orbital Laser
+  requiresHold?: boolean; // For continuous weapons like Continuous Laser & Freeze Ray
 }

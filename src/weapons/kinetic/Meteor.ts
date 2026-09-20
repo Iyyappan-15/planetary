@@ -24,7 +24,7 @@ export class MeteorWeapon extends Weapon {
     super({
       id: 'meteor',
       name: 'Meteor',
-      category: 'kinetic',
+      category: 'celestial',
       description: 'Dense hyper-velocity orbital rock that enters the atmosphere and punches a fiery impact crater into the crust.',
       cooldownMs: 350,
       iconName: 'Flame',

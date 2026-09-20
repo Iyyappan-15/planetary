@@ -16,7 +16,7 @@ export class SpaceTearWeapon extends Weapon {
     super({
       id: 'space_tear',
       name: 'Space-Time Tear',
-      category: 'cosmic',
+      category: 'celestial',
       description: 'Rips a luminous chromatic fissure in the fabric of space, destabilizing local matter.',
       cooldownMs: 1800,
       iconName: 'Maximize2',

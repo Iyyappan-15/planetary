@@ -35,7 +35,7 @@ export class NuclearBlastWeapon extends Weapon {
     super({
       id: 'nuclear_blast',
       name: 'Nuclear Blast',
-      category: 'explosive',
+      category: 'explosives',
       description: 'Cinematic thermonuclear detonation releasing a blinding incandescent fireball, supersonic pressure wave, and megacrater.',
       cooldownMs: 800,
       iconName: 'Radiation',

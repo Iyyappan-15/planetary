@@ -17,11 +17,11 @@ export class MiniBlackHoleWeapon extends Weapon {
 
   constructor() {
     super({
-      id: 'mini_black_hole',
-      name: 'Mini Black Hole',
-      category: 'cosmic',
-      description: 'Cosmic micro-singularity with an intense gravitational gradient that tears matter apart and swallows planetary crust.',
-      cooldownMs: 2500,
+      id: 'black_hole',
+      name: 'Black Hole',
+      category: 'celestial',
+      description: 'Cosmic singularity with an intense gravitational gradient that tears matter apart and swallows planetary crust.',
+      cooldownMs: 2400,
       iconName: 'Disc',
       keyShortcut: '7',
       damageRadius: 0.22,

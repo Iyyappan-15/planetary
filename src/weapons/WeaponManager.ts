@@ -2,21 +2,44 @@ import * as THREE from 'three';
 import { Weapon, WeaponContext } from './Weapon';
 import { WeaponId, TargetInfo } from '../types/weapon';
 import { vector3ToUV, vector3ToLatLon } from '../utils/math';
-import { MeteorWeapon } from './kinetic/Meteor';
-import { OrbitalLaserWeapon } from './energy/OrbitalLaser';
-import { NuclearBlastWeapon } from './explosive/NuclearBlast';
-import { GravityWellWeapon } from './gravity/GravityWell';
+
+// Explosives
+import { NuclearMissileWeapon } from './explosive/NuclearMissile';
+import { ClusterMissilesWeapon } from './explosive/ClusterMissiles';
+import { AntimatterBombWeapon } from './explosive/AntimatterBomb';
+import { StealthBomberWeapon } from './explosive/StealthBomber';
+import { DrillingTorpedoWeapon } from './explosive/DrillingTorpedo';
+
+// Lasers & Energy
+import { ContinuousLaserWeapon } from './energy/ContinuousLaser';
+import { FreezeRayWeapon } from './energy/FreezeRay';
+import { PlasmaCannonWeapon } from './energy/PlasmaCannon';
+import { LaserBladeWeapon } from './energy/LaserBlade';
+import { LightningStormWeapon } from './energy/LightningStorm';
+
+// Celestial
+import { MeteorShowerWeapon } from './kinetic/MeteorShower';
 import { GiantAsteroidWeapon } from './kinetic/GiantAsteroid';
-import { PlasmaBeamWeapon } from './energy/PlasmaBeam';
+import { MoonfallWeapon } from './kinetic/Moonfall';
 import { MiniBlackHoleWeapon } from './cosmic/MiniBlackHole';
 import { SpaceTearWeapon } from './cosmic/SpaceTear';
-import { GlassmakerWeapon } from './energy/Glassmaker';
-import { MoonfallWeapon } from './kinetic/Moonfall';
+
+// Alien Technology
+import { AlienUFOWeapon } from './alien/AlienUFO';
+import { PlanetDestroyerWeapon } from './alien/PlanetDestroyer';
+import { ShieldSatelliteWeapon } from './alien/ShieldSatellite';
+import { HarvesterProbeWeapon } from './alien/HarvesterProbe';
+
+// Monsters & Titans
+import { SpaceWormWeapon } from './monsters/SpaceWorm';
+import { CelestialPunchWeapon } from './monsters/CelestialPunch';
+import { AbyssalDevourerWeapon } from './monsters/AbyssalDevourer';
+
 import { disposeNode } from '../utils/disposal';
 
 export class WeaponManager {
   private weapons: Map<WeaponId, Weapon> = new Map();
-  public activeWeaponId: WeaponId | null = 'meteor';
+  public activeWeaponId: WeaponId | null = 'nuclear_missile';
   private raycaster: THREE.Raycaster = new THREE.Raycaster();
   private mouseVec: THREE.Vector2 = new THREE.Vector2();
 
@@ -26,17 +49,71 @@ export class WeaponManager {
   public isHoldingTrigger: boolean = false;
 
   constructor() {
-    // 1. Initialize Weapons
-    this.registerWeapon(new MeteorWeapon());
-    this.registerWeapon(new OrbitalLaserWeapon());
-    this.registerWeapon(new NuclearBlastWeapon());
-    this.registerWeapon(new GravityWellWeapon());
-    this.registerWeapon(new GiantAsteroidWeapon());
-    this.registerWeapon(new PlasmaBeamWeapon());
-    this.registerWeapon(new MiniBlackHoleWeapon());
-    this.registerWeapon(new SpaceTearWeapon());
-    this.registerWeapon(new GlassmakerWeapon());
-    this.registerWeapon(new MoonfallWeapon());
+    // 1. Initialize Solar Smash Weapons
+    const nuclearMissile = new NuclearMissileWeapon();
+    const clusterMissiles = new ClusterMissilesWeapon();
+    const antimatterBomb = new AntimatterBombWeapon();
+    const stealthBomber = new StealthBomberWeapon();
+    const drillingTorpedo = new DrillingTorpedoWeapon();
+
+    const continuousLaser = new ContinuousLaserWeapon();
+    const freezeRay = new FreezeRayWeapon();
+    const plasmaCannon = new PlasmaCannonWeapon();
+    const laserBlade = new LaserBladeWeapon();
+    const lightningStorm = new LightningStormWeapon();
+
+    const meteorShower = new MeteorShowerWeapon();
+    const giantAsteroid = new GiantAsteroidWeapon();
+    const moonCollision = new MoonfallWeapon();
+    const blackHole = new MiniBlackHoleWeapon();
+    const spaceTear = new SpaceTearWeapon();
+
+    const alienUfo = new AlienUFOWeapon();
+    const planetDestroyer = new PlanetDestroyerWeapon();
+    const shieldSatellite = new ShieldSatelliteWeapon();
+    const harvesterProbe = new HarvesterProbeWeapon();
+
+    const spaceWorm = new SpaceWormWeapon();
+    const celestialPunch = new CelestialPunchWeapon();
+    const abyssalDevourer = new AbyssalDevourerWeapon();
+
+    // Register primary arsenal
+    this.registerWeapon(nuclearMissile);
+    this.registerWeapon(clusterMissiles);
+    this.registerWeapon(antimatterBomb);
+    this.registerWeapon(stealthBomber);
+    this.registerWeapon(drillingTorpedo);
+
+    this.registerWeapon(continuousLaser);
+    this.registerWeapon(freezeRay);
+    this.registerWeapon(plasmaCannon);
+    this.registerWeapon(laserBlade);
+    this.registerWeapon(lightningStorm);
+
+    this.registerWeapon(meteorShower);
+    this.registerWeapon(giantAsteroid);
+    this.registerWeapon(moonCollision);
+    this.registerWeapon(blackHole);
+    this.registerWeapon(spaceTear);
+
+    this.registerWeapon(alienUfo);
+    this.registerWeapon(planetDestroyer);
+    this.registerWeapon(shieldSatellite);
+    this.registerWeapon(harvesterProbe);
+
+    this.registerWeapon(spaceWorm);
+    this.registerWeapon(celestialPunch);
+    this.registerWeapon(abyssalDevourer);
+
+    // Compatibility aliases
+    this.weapons.set('meteor', meteorShower);
+    this.weapons.set('orbital_laser', continuousLaser);
+    this.weapons.set('nuclear_blast', nuclearMissile);
+    this.weapons.set('moonfall', moonCollision);
+    this.weapons.set('mini_black_hole', blackHole);
+    this.weapons.set('plasma_beam', plasmaCannon);
+    this.weapons.set('gravity_well', blackHole);
+    this.weapons.set('planetary_glassmaker', continuousLaser);
 
     // 2. Build 3D targeting reticle (depthTest: false prevents clipping into planet mesh)
     const markerGeo = new THREE.RingGeometry(0.06, 0.09, 32);

@@ -13,7 +13,7 @@ export class OrbitalLaserWeapon extends Weapon {
     super({
       id: 'orbital_laser',
       name: 'Orbital Laser',
-      category: 'energy',
+      category: 'lasers',
       description: 'Focuses a high-energy particle beam from orbit, carving deep thermal scars and boiling the surface to incandescent slag.',
       cooldownMs: 80,
       iconName: 'Zap',

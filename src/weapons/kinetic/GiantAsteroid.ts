@@ -24,7 +24,7 @@ export class GiantAsteroidWeapon extends Weapon {
     super({
       id: 'giant_asteroid',
       name: 'Giant Asteroid',
-      category: 'kinetic',
+      category: 'celestial',
       description: 'City-sized celestial asteroid delivering extinction-level kinetic energy.',
       cooldownMs: 1500,
       iconName: 'CircleDot',

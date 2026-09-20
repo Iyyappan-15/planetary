@@ -20,7 +20,7 @@ export const App: React.FC = () => {
   const [hasStarted, setHasStarted] = useState<boolean>(false);
   const [settings, setSettings] = useState<GameSettings>(loadStoredSettings());
   const [activePlanet, setActivePlanet] = useState<PlanetConfig>(PLANET_PRESETS[0]);
-  const [activeWeaponId, setActiveWeaponId] = useState<WeaponId | null>('meteor');
+  const [activeWeaponId, setActiveWeaponId] = useState<WeaponId | null>('nuclear_missile');
   const [isRotationPaused, setIsRotationPaused] = useState<boolean>(false);
   const [integrity, setIntegrity] = useState<PlanetIntegrity>({
     currentHp: 100,

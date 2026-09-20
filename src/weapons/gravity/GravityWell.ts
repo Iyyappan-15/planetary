@@ -21,7 +21,7 @@ export class GravityWellWeapon extends Weapon {
     super({
       id: 'gravity_well',
       name: 'Gravity Well',
-      category: 'gravity',
+      category: 'celestial',
       description: 'Generates an intense localized gravitational singularity, violently pulling surface crust, atmosphere, and debris into an accretion spiral.',
       cooldownMs: 1200,
       iconName: 'Orbit',

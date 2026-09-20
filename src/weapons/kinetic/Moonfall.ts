@@ -21,10 +21,10 @@ export class MoonfallWeapon extends Weapon {
 
   constructor() {
     super({
-      id: 'moonfall',
-      name: 'Moonfall',
-      category: 'kinetic',
-      description: 'Summons a rogue satellite moon from deep space and sends it crashing into the planetary core.',
+      id: 'moon_collision',
+      name: 'Moon Collision',
+      category: 'celestial',
+      description: 'Pulls a massive celestial moon out of orbit and crashes it violently into the planetary core.',
       cooldownMs: 3000,
       iconName: 'Moon',
       damageRadius: 0.28,
