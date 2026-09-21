@@ -15,6 +15,7 @@ import './styles/hud.css';
 
 import { ShieldType, ActiveShieldState } from './types/shield';
 import type { MoonState } from './planets/MoonSystem';
+import { Analytics } from '@vercel/analytics/react';
 
 export const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -259,6 +260,9 @@ export const App: React.FC = () => {
           onClose={() => setIsSettingsOpen(false)}
         />
       )}
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 };
