@@ -33,6 +33,8 @@ interface HUDProps {
   onResetMoon: () => void;
   isSolarView: boolean;
   onToggleSolarView: () => void;
+  onStartMobileFire?: () => void;
+  onStopMobileFire?: () => void;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -59,6 +61,8 @@ export const HUD: React.FC<HUDProps> = ({
   onResetMoon,
   isSolarView,
   onToggleSolarView,
+  onStartMobileFire,
+  onStopMobileFire,
 }) => {
   // Compute integrity color
   const hpPercent = integrity.percentage;
@@ -71,6 +75,7 @@ export const HUD: React.FC<HUDProps> = ({
 
   const pop = integrity.population;
   const [recentCasualtyFlash, setRecentCasualtyFlash] = useState<number | null>(null);
+  const [isMobileTelemetryOpen, setIsMobileTelemetryOpen] = useState<boolean>(false);
 
   // Trigger brief alert flash when new casualties occur
   useEffect(() => {
@@ -203,8 +208,27 @@ export const HUD: React.FC<HUDProps> = ({
         </div>
       </div>
 
+      {/* Mobile Telemetry Quick Pill (Visible in mobile landscape) */}
+      <button
+        className={`mobile-telemetry-toggle ${isMobileTelemetryOpen ? 'active' : ''}`}
+        onClick={() => setIsMobileTelemetryOpen((prev) => !prev)}
+        title="Toggle Planetary Telemetry"
+      >
+        <Activity size={13} style={{ color: '#00f0ff' }} />
+        <span>
+          {pop && pop.initial > 0
+            ? pop.current > 0
+              ? `${(pop.current / 1e9).toFixed(2)}B`
+              : 'EXTINCT'
+            : 'TELEMETRY'}
+        </span>
+        {PLANET_MOONS[planet.id]?.length > 0 && (
+          <span className="telemetry-pill-moon">🌕 {PLANET_MOONS[planet.id].length}</span>
+        )}
+      </button>
+
       {/* Right Side Telemetry & Demographics Monitor */}
-      <div className="hud-right-panel">
+      <div className={`hud-right-panel ${isMobileTelemetryOpen ? 'mobile-expanded' : ''}`}>
         {/* Moon Orbital Physics & Gravitational Weapons Card */}
         {(() => {
           const planetMoons = PLANET_MOONS[planet.id] || [];
@@ -372,6 +396,30 @@ export const HUD: React.FC<HUDProps> = ({
 
       {/* Bottom Cheatsheet Help */}
       <ControlsHelp />
+
+      {/* Mobile Gamepad Glowing Fire Trigger (Right Thumb) */}
+      {activeWeaponId && (
+        <div className="mobile-gamepad-controls">
+          <button
+            className="mobile-fire-btn"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              onStartMobileFire?.();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              onStopMobileFire?.();
+            }}
+            onMouseDown={() => onStartMobileFire?.()}
+            onMouseUp={() => onStopMobileFire?.()}
+            title="Deploy Active Weapon"
+          >
+            <div className="fire-btn-glow-ring" />
+            <Flame size={26} className="fire-btn-icon" />
+            <span className="fire-btn-label">FIRE</span>
+          </button>
+        </div>
+      )}
     </>
   );
 };

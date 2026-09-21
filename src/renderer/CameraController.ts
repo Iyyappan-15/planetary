@@ -78,6 +78,12 @@ export class CameraController {
     this.targetRadius = clamp(this.targetRadius + zoomFactor, this.minRadius, this.maxRadius);
   }
 
+  public handlePinch(pinchDelta: number): void {
+    // Negative delta = fingers spread apart (zoom in), positive delta = fingers pinched together (zoom out)
+    const zoomFactor = pinchDelta * 0.008 * this.sensitivity;
+    this.targetRadius = clamp(this.targetRadius + zoomFactor, this.minRadius, this.maxRadius);
+  }
+
   public addTrauma(amount: number): void {
     if (!this.shakeEnabled) return;
     this.trauma = clamp(this.trauma + amount, 0, 1.0);

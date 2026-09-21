@@ -31,6 +31,8 @@ body, html, #root {
   background-color: #03060c;
   color: var(--hud-text-main);
   font-family: var(--font-sans);
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 .planetary-container {
@@ -38,6 +40,7 @@ body, html, #root {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  touch-action: none;
 }
 
 .webgl-canvas {
@@ -49,6 +52,7 @@ body, html, #root {
   display: block;
   z-index: 1;
   cursor: crosshair;
+  touch-action: none;
 }
 
 /* ================= TOP HEADER HUD ================= */
@@ -1654,5 +1658,358 @@ body, html, #root {
   color: var(--hud-text-dim);
   font-size: 13px;
   font-family: var(--font-mono);
+}
+
+/* ================= MOBILE ORIENTATION PROMPT OVERLAY ================= */
+.orientation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  background: rgba(3, 6, 14, 0.96);
+  backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.3s ease;
+}
+
+.orientation-modal {
+  max-width: 360px;
+  width: 100%;
+  background: rgba(14, 20, 34, 0.95);
+  border: 1.5px solid rgba(0, 255, 204, 0.4);
+  border-radius: 20px;
+  padding: 30px 24px;
+  text-align: center;
+  box-shadow: 0 0 40px rgba(0, 255, 204, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.orientation-icon-wrapper {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.phone-icon-animated {
+  color: #00ffcc;
+  animation: rotatePhone 2.6s infinite ease-in-out;
+  transform-origin: center;
+  filter: drop-shadow(0 0 12px rgba(0, 255, 204, 0.6));
+}
+
+.rotate-icon-pulse {
+  position: absolute;
+  top: 0;
+  right: 0;
+  color: #ff9922;
+  animation: spinSlow 4s linear infinite;
+}
+
+@keyframes rotatePhone {
+  0%, 15% {
+    transform: rotate(0deg);
+  }
+  45%, 75% {
+    transform: rotate(90deg);
+  }
+  90%, 100% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.orientation-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #00ffcc;
+  background: rgba(0, 255, 204, 0.12);
+  border: 1px solid rgba(0, 255, 204, 0.3);
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.orientation-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.orientation-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #9ab0c6;
+}
+
+.orientation-desc strong {
+  color: #00ffcc;
+}
+
+.orientation-tip {
+  font-size: 11.5px;
+  color: #ffaa33;
+  background: rgba(255, 170, 51, 0.1);
+  border: 1px dashed rgba(255, 170, 51, 0.4);
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.orientation-bypass-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #8899aa;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: all 0.2s ease;
+}
+
+.orientation-bypass-btn:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* ================= MOBILE TELEMETRY QUICK PILL ================= */
+.mobile-telemetry-toggle {
+  display: none;
+  position: absolute;
+  top: 56px;
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 100;
+  background: rgba(10, 16, 30, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(0, 255, 204, 0.4);
+  border-radius: 20px;
+  padding: 5px 12px;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+}
+
+.mobile-telemetry-toggle.active {
+  background: rgba(0, 255, 204, 0.2);
+  border-color: #00ffcc;
+  box-shadow: 0 0 14px rgba(0, 255, 204, 0.4);
+}
+
+.telemetry-pill-moon {
+  color: #88ccee;
+  font-size: 10px;
+  margin-left: 2px;
+}
+
+/* ================= MOBILE GAMEPAD FIRE TRIGGER ================= */
+.mobile-gamepad-controls {
+  display: none;
+  position: absolute;
+  bottom: 24px;
+  right: max(24px, env(safe-area-inset-right));
+  z-index: 200;
+  pointer-events: auto;
+}
+
+.mobile-fire-btn {
+  position: relative;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff5500, #bb1100);
+  border: 2.5px solid rgba(255, 130, 60, 0.95);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 0 24px rgba(255, 85, 0, 0.65), inset 0 2px 6px rgba(255, 255, 255, 0.5);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  touch-action: none;
+  user-select: none;
+}
+
+.mobile-fire-btn:active {
+  transform: scale(0.92);
+  background: radial-gradient(circle at 35% 35%, #ff7722, #dd2200);
+  box-shadow: 0 0 36px rgba(255, 85, 0, 0.9), inset 0 2px 8px rgba(255, 255, 255, 0.7);
+}
+
+.fire-btn-glow-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 85, 0, 0.4);
+  animation: fireGlowPulse 1.8s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes fireGlowPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
+.fire-btn-icon {
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+}
+
+.fire-btn-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+/* ================= MOBILE LANDSCAPE GAMEPAD RESPONSIVE STYLING ================= */
+@media (orientation: landscape) and (max-height: 550px), (max-width: 950px) and (orientation: landscape) {
+  /* Show Mobile Fire Button on Landscape Phones */
+  .mobile-gamepad-controls {
+    display: block;
+  }
+
+  /* Show Telemetry Quick Pill */
+  .mobile-telemetry-toggle {
+    display: flex;
+  }
+
+  /* Safe Area Insets for Camera Notches */
+  .solar-smash-weapon-dock {
+    left: max(8px, env(safe-area-inset-left));
+    gap: 8px;
+  }
+
+  .category-dock-strip {
+    padding: 6px;
+    gap: 6px;
+    border-radius: 12px;
+  }
+
+  .category-dock-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 9px;
+  }
+
+  .cat-btn-label {
+    font-size: 7px;
+  }
+
+  .weapon-drawer {
+    width: 230px;
+    max-height: 78vh;
+    padding: 10px;
+  }
+
+  .drawer-weapon-card {
+    padding: 6px 8px;
+    gap: 8px;
+  }
+
+  .card-icon-wrap {
+    width: 28px;
+    height: 28px;
+  }
+
+  .card-name {
+    font-size: 11.5px;
+  }
+
+  /* Top Bar Compact Sizing */
+  .hud-top {
+    padding: 6px max(14px, env(safe-area-inset-right)) 6px max(14px, env(safe-area-inset-left));
+    height: 48px;
+  }
+
+  .brand-title {
+    font-size: 13px;
+    letter-spacing: 2px;
+  }
+
+  .brand-badge {
+    display: none;
+  }
+
+  .hud-planet-status {
+    padding: 4px 10px;
+  }
+
+  .planet-name {
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  .integrity-bar-wrap {
+    width: 80px;
+    height: 4px;
+  }
+
+  .hud-btn {
+    padding: 4px 7px;
+    font-size: 10px;
+    gap: 4px;
+  }
+
+  .hud-btn span {
+    display: none; /* Icon-only on mobile top bar for compact fit */
+  }
+
+  /* Right Panel: collapsed by default on mobile landscape */
+  .hud-right-panel {
+    top: 86px;
+    right: max(10px, env(safe-area-inset-right));
+    width: 250px;
+    max-height: 74vh;
+    overflow-y: auto;
+    background: rgba(8, 12, 22, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 255, 204, 0.3);
+    border-radius: 14px;
+    padding: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    display: none;
+    pointer-events: auto;
+  }
+
+  .hud-right-panel.mobile-expanded {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+  }
+
+  /* Cheatsheet help hidden on mobile landscape */
+  .hud-controls-help {
+    display: none !important;
+  }
 }
 

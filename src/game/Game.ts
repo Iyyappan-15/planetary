@@ -333,6 +333,34 @@ export class Game {
     this.cameraController.focusOnCoordinates(lat, lon);
   }
 
+  public startMobileFire(): void {
+    this.audioManager.unlock();
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate(35); } catch {}
+    }
+
+    // If no target acquired yet, target the center of the planet currently in view
+    if (!this.weaponManager.currentTarget) {
+      this.weaponManager.updateTargeting(
+        window.innerWidth / 2,
+        window.innerHeight / 2,
+        window.innerWidth,
+        window.innerHeight,
+        this.cameraController.camera,
+        this.getWeaponContext()
+      );
+    }
+
+    if (this.weaponManager.activeWeaponId && this.weaponManager.currentTarget) {
+      this.weaponManager.startContinuous(this.getWeaponContext());
+      this.weaponManager.fire(this.getWeaponContext());
+    }
+  }
+
+  public stopMobileFire(): void {
+    this.weaponManager.stopContinuous(this.getWeaponContext());
+  }
+
   public fireAtCoordinates(lat: number, lon: number, weaponId?: WeaponId | null): void {
     if (this.planet.isDestroyed) return;
 
@@ -455,7 +483,121 @@ export class Game {
       this.weaponManager.stopContinuous(this.getWeaponContext());
     });
 
+    // Multi-touch gestures for mobile / tablet
+    let initialPinchDist = 0;
+    let touchStartTime = 0;
+    let touchStartPos = { x: 0, y: 0 };
+    let isMultiTouchPinch = false;
+
+    canvas.addEventListener(
+      'touchstart',
+      (e: TouchEvent) => {
+        this.audioManager.unlock();
+        this.isPointerOverCanvas = true;
+
+        if (e.touches.length === 1) {
+          isMultiTouchPinch = false;
+          const touch = e.touches[0];
+          touchStartTime = Date.now();
+          touchStartPos = { x: touch.clientX, y: touch.clientY };
+          this.currentMouseX = touch.clientX;
+          this.currentMouseY = touch.clientY;
+
+          // Update targeting instantly
+          this.weaponManager.updateTargeting(
+            touch.clientX,
+            touch.clientY,
+            window.innerWidth,
+            window.innerHeight,
+            this.cameraController.camera,
+            this.getWeaponContext()
+          );
+
+          // Start camera drag for orbiting
+          this.cameraController.startDrag(touch.clientX, touch.clientY);
+        } else if (e.touches.length >= 2) {
+          isMultiTouchPinch = true;
+          this.cameraController.stopDrag();
+          this.weaponManager.stopContinuous(this.getWeaponContext());
+
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          initialPinchDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        }
+      },
+      { passive: false }
+    );
+
+    canvas.addEventListener(
+      'touchmove',
+      (e: TouchEvent) => {
+        e.preventDefault(); // Prevent scroll bounce
+
+        if (e.touches.length === 1 && !isMultiTouchPinch) {
+          const touch = e.touches[0];
+          this.currentMouseX = touch.clientX;
+          this.currentMouseY = touch.clientY;
+
+          this.cameraController.handleMouseMove(touch.clientX, touch.clientY);
+
+          this.weaponManager.updateTargeting(
+            touch.clientX,
+            touch.clientY,
+            window.innerWidth,
+            window.innerHeight,
+            this.cameraController.camera,
+            this.getWeaponContext()
+          );
+        } else if (e.touches.length >= 2) {
+          const t1 = e.touches[0];
+          const t2 = e.touches[1];
+          const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+          const pinchDelta = initialPinchDist - dist;
+          this.cameraController.handlePinch(pinchDelta);
+          initialPinchDist = dist;
+        }
+      },
+      { passive: false }
+    );
+
+    canvas.addEventListener('touchend', (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+        this.cameraController.stopDrag();
+        this.weaponManager.stopContinuous(this.getWeaponContext());
+
+        const touchDuration = Date.now() - touchStartTime;
+        const lastTouch = e.changedTouches[0];
+        const moveDist = lastTouch
+          ? Math.hypot(lastTouch.clientX - touchStartPos.x, lastTouch.clientY - touchStartPos.y)
+          : 999;
+
+        // Quick tap (< 280ms, moved < 12px) = deploy weapon at tapped spot!
+        if (!isMultiTouchPinch && touchDuration < 280 && moveDist < 12) {
+          if (this.weaponManager.activeWeaponId && this.weaponManager.currentTarget) {
+            this.weaponManager.fire(this.getWeaponContext());
+            if ('vibrate' in navigator) {
+              try { navigator.vibrate(25); } catch {}
+            }
+          }
+        }
+        isMultiTouchPinch = false;
+      } else if (e.touches.length === 1) {
+        // Returned to 1 touch from pinch
+        const touch = e.touches[0];
+        this.cameraController.startDrag(touch.clientX, touch.clientY);
+        isMultiTouchPinch = false;
+      }
+    });
+
+    canvas.addEventListener('touchcancel', () => {
+      this.cameraController.stopDrag();
+      this.weaponManager.stopContinuous(this.getWeaponContext());
+      isMultiTouchPinch = false;
+    });
+
+    // Desktop Pointer Events (ignored when on touch to avoid double triggers)
     canvas.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch') return;
       this.audioManager.unlock();
 
       if (e.button === 0 && !e.shiftKey) {
@@ -473,12 +615,14 @@ export class Game {
     });
 
     window.addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
       this.currentMouseX = e.clientX;
       this.currentMouseY = e.clientY;
       this.cameraController.handleMouseMove(e.clientX, e.clientY);
     });
 
     window.addEventListener('pointerup', (e) => {
+      if (e.pointerType === 'touch') return;
       this.cameraController.stopDrag();
       if (e.button === 0) {
         this.weaponManager.stopContinuous(this.getWeaponContext());
@@ -495,6 +639,9 @@ export class Game {
     );
 
     window.addEventListener('resize', this.onResize);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(this.onResize, 150);
+    });
   }
 
   private onResize = (): void => {

@@ -19,7 +19,9 @@ export class SceneManager {
       alpha: false,
     });
 
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, settings.pixelRatio));
+    const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    const maxDpr = isMobile ? Math.min(window.devicePixelRatio || 1, 1.5) : Math.min(window.devicePixelRatio || 1, settings.pixelRatio);
+    this.renderer.setPixelRatio(maxDpr);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
@@ -90,7 +92,9 @@ export class SceneManager {
   }
 
   public updateSettings(settings: GraphicsSettings): void {
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, settings.pixelRatio));
+    const isMobile = typeof window !== 'undefined' && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    const maxDpr = isMobile ? Math.min(window.devicePixelRatio || 1, 1.5) : Math.min(window.devicePixelRatio || 1, settings.pixelRatio);
+    this.renderer.setPixelRatio(maxDpr);
   }
 
   public render(camera: THREE.Camera): void {

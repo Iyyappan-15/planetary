@@ -5,6 +5,7 @@ import { PlanetSelector } from './ui/PlanetSelector';
 import { SettingsModal } from './ui/SettingsModal';
 import { SatelliteMapModal } from './ui/SatelliteViewModal';
 import { LandingScreen } from './ui/LandingScreen';
+import { OrientationPrompt } from './ui/OrientationPrompt';
 import { PLANET_PRESETS } from './data/planets';
 import { WEAPON_DEFINITIONS } from './data/weapons';
 import { PlanetConfig } from './types/planet';
@@ -136,6 +137,14 @@ export const App: React.FC = () => {
     gameRef.current?.audioManager.unlock();
   }, []);
 
+  const handleStartMobileFire = useCallback(() => {
+    gameRef.current?.startMobileFire();
+  }, []);
+
+  const handleStopMobileFire = useCallback(() => {
+    gameRef.current?.stopMobileFire();
+  }, []);
+
   // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -224,8 +233,13 @@ export const App: React.FC = () => {
           onResetMoon={handleResetMoon}
           isSolarView={isSolarView}
           onToggleSolarView={handleToggleSolarView}
+          onStartMobileFire={handleStartMobileFire}
+          onStopMobileFire={handleStopMobileFire}
         />
       )}
+
+      {/* Mobile Landscape Orientation Advisory */}
+      <OrientationPrompt />
 
       {/* Planet Selector Modal */}
       {isPlanetSelectorOpen && (
